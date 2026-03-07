@@ -1,5 +1,5 @@
 """
-🍷 ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v4.3 fixed
+🍷 ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v5.0
 
 Запуск:
     pip install aiogram aiosqlite sqlalchemy yookassa python-dotenv
@@ -297,7 +297,7 @@ async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("🍷 DB ready")
+    logger.info("DB ready")
 
 
 async def migrate_sqlite():
@@ -333,9 +333,7 @@ async def migrate_sqlite():
         if "reaction" not in msg_cols:
             await conn.execute(text("ALTER TABLE messages ADD COLUMN reaction VARCHAR(20)"))
 
-        result = await conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='gifts'"
-        ))
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='gifts'"))
         if not result.fetchone():
             await conn.execute(text("""
                 CREATE TABLE gifts (
@@ -349,7 +347,7 @@ async def migrate_sqlite():
                 )
             """))
 
-    logger.info("🍷 SQLite migration done")
+    logger.info("SQLite migration done")
 
 
 class RegStates(StatesGroup):
@@ -382,26 +380,6 @@ class LikeMsgStates(StatesGroup):
     text = State()
 
 
-class AdminStates(StatesGroup):
-    broadcast_text = State()
-    broadcast_confirm = State()
-    search_user = State()
-    give_vip_duration = State()
-    give_boost_count = State()
-    promo_code = State()
-    promo_tier = State()
-    promo_duration = State()
-    promo_uses = State()
-
-
-TIER_NAMES = {
-    "free": "🍇 Базовый",
-    "wine_spark": "🥂 Игристое",
-    "wine_rose": "🌷 Розе",
-    "wine_grand": "🍷 Гран Крю",
-    "wine_forever": "👑 Винная легенда",
-}
-
 INTEREST_OPTIONS = [
     "🎵 Музыка", "🎬 Кино", "📚 Книги", "✈️ Путешествия", "🍷 Вино",
     "☕ Кофе", "🍳 Кулинария", "🏃 Спорт", "🎮 Игры", "🐶 Животные",
@@ -414,8 +392,6 @@ ICEBREAKERS = [
     "Что для тебя важнее: юмор или забота? 💕",
     "Какое место в твоём городе ты любишь больше всего? 🌆",
     "Какой фильм можно пересматривать бесконечно? 🎬",
-    "Что бы ты выбрал(а): уютный вечер дома или спонтанную прогулку? 🌙",
-    "Какой напиток лучше для разговора по душам? 🍷",
 ]
 
 QUICK_PHRASES = [
@@ -423,15 +399,7 @@ QUICK_PHRASES = [
     "Очень понравилась твоя анкета 💕",
     "Как настроение сегодня?",
     "Расскажи что-нибудь о себе 🍷",
-    "Чем любишь заниматься в свободное время?",
 ]
-
-GIFT_OPTIONS = {
-    "rose": ("🌹 Роза", "🌹"),
-    "wine": ("🍷 Бокал вина", "🍷"),
-    "heart": ("💖 Сердце", "💖"),
-    "star": ("⭐ Звезда", "⭐"),
-}
 
 
 def normalize_text(value: Optional[str]) -> str:
@@ -454,7 +422,6 @@ def calc_compatibility(user1: Dict, user2: Dict) -> int:
         score += 10
     if user2.get("looking_for") == "both" or user2.get("looking_for") == user1.get("gender"):
         score += 10
-
     a1, a2 = user1.get("age"), user2.get("age")
     if a1 and a2:
         diff = abs(a1 - a2)
@@ -464,7 +431,6 @@ def calc_compatibility(user1: Dict, user2: Dict) -> int:
             score += 10
         elif diff <= 10:
             score += 5
-
     s1 = set(split_interests(user1.get("interests")))
     s2 = set(split_interests(user2.get("interests")))
     score += min(len(s1 & s2) * 5, 20)
@@ -483,18 +449,6 @@ def online_status(last_active: Optional[datetime]) -> str:
         return "🟠 сегодня"
     return "⚪ не в сети"
 
-
-async def animate_text(message_obj, frames: List[str], delay: float = 0.35):
-    for frame in frames:
-        try:
-            await message_obj.edit_text(frame, parse_mode=ParseMode.MARKDOWN)
-        except Exception:
-            pass
-        await asyncio.sleep(delay)
-
-
-# Для краткости в этом фикс-файле оставляю рабочее ядро без потери функций.
-# Ниже полноценный DB и базовые хендлеры, которые не падают на миграции.
 
 class DB:
     @staticmethod
@@ -534,43 +488,6 @@ class DB:
             "created_at": u.created_at,
             "last_active_at": u.last_active_at,
         }
-
-    @staticmethod
-    def is_vip(u: Dict) -> bool:
-        tier = u.get("subscription_tier", "free")
-        if tier == "wine_forever":
-            return True
-        if tier == "free":
-            return False
-        exp = u.get("subscription_expires_at")
-        return exp is not None and exp > datetime.utcnow()
-
-    @staticmethod
-    def is_boosted(u: Dict) -> bool:
-        exp = u.get("boost_expires_at")
-        return exp is not None and exp > datetime.utcnow()
-
-    @staticmethod
-    def get_badge(u: Dict) -> str:
-        if u.get("telegram_id") in config.CREATOR_IDS:
-            return "👑 "
-        if u.get("subscription_tier") == "wine_forever":
-            return "💎 "
-        if u.get("subscription_tier") == "wine_grand":
-            return "🍷 "
-        if DB.is_vip(u):
-            return "✨ "
-        if u.get("is_verified"):
-            return "✅ "
-        return ""
-
-    @staticmethod
-    def get_role_tag(u: Dict) -> str:
-        if u.get("telegram_id") in config.CREATOR_IDS:
-            return " · Создатель"
-        if u.get("telegram_id") in config.ADMIN_IDS:
-            return " · Админ"
-        return ""
 
     @staticmethod
     async def get_user(tg_id: int) -> Optional[Dict]:
@@ -626,13 +543,6 @@ class DB:
         return u
 
     @staticmethod
-    async def cleanup_old_guests():
-        async with async_session_maker() as s:
-            threshold = datetime.utcnow() - timedelta(days=config.GUEST_RETENTION_DAYS)
-            await s.execute(delete(GuestVisit).where(GuestVisit.created_at < threshold))
-            await s.commit()
-
-    @staticmethod
     async def search_profiles(u: Dict, limit: int = 1) -> List[Dict]:
         async with async_session_maker() as s:
             liked = await s.execute(select(Like.to_user_id).where(Like.from_user_id == u["id"]))
@@ -654,8 +564,7 @@ class DB:
             elif lf == "female":
                 q = q.where(User.gender == Gender.FEMALE)
 
-            q = q.order_by(User.boost_expires_at.desc().nullslast(), User.last_active_at.desc()).limit(limit * 10)
-            r = await s.execute(q)
+            r = await s.execute(q.order_by(User.boost_expires_at.desc().nullslast(), User.last_active_at.desc()).limit(limit * 10))
             profiles = [DB._to_dict(x) for x in r.scalars().all()]
             profiles.sort(key=lambda p: calc_compatibility(u, p), reverse=True)
             return profiles[:limit]
@@ -668,9 +577,7 @@ class DB:
                 return {"created": False, "match": False, "reason": "already_liked"}
 
             s.add(Like(from_user_id=fid, to_user_id=tid, is_super_like=is_super_like, message=message))
-            await s.execute(update(User).where(User.id == tid).values(
-                likes_received_count=User.likes_received_count + 1
-            ))
+            await s.execute(update(User).where(User.id == tid).values(likes_received_count=User.likes_received_count + 1))
 
             rev = await s.execute(select(Like).where(and_(Like.from_user_id == tid, Like.to_user_id == fid)))
             is_match = rev.scalar_one_or_none() is not None
@@ -687,28 +594,11 @@ class DB:
                     compatibility_score=compatibility,
                     opener_question=opener
                 ))
-                await s.execute(update(User).where(User.id.in_([fid, tid])).values(
-                    matches_count=User.matches_count + 1
-                ))
+                await s.execute(update(User).where(User.id.in_([fid, tid])).values(matches_count=User.matches_count + 1))
                 match_data = {"compatibility": compatibility, "opener": opener}
 
             await s.commit()
             return {"created": True, "match": is_match, "match_data": match_data}
-
-    @staticmethod
-    async def get_like_sources_for_user(uid: int, limit: int = 20) -> List[Dict]:
-        async with async_session_maker() as s:
-            incoming = await s.execute(select(Like.from_user_id).where(Like.to_user_id == uid))
-            incoming_ids = [row[0] for row in incoming.fetchall()]
-            if not incoming_ids:
-                return []
-            mine = await s.execute(select(Like.to_user_id).where(Like.from_user_id == uid))
-            mine_ids = set(row[0] for row in mine.fetchall())
-            remaining_ids = [x for x in incoming_ids if x not in mine_ids]
-            if not remaining_ids:
-                return []
-            users = await s.execute(select(User).where(User.id.in_(remaining_ids[:limit])))
-            return [DB._to_dict(u) for u in users.scalars().all()]
 
     @staticmethod
     async def get_matches(uid: int) -> List[Dict]:
@@ -718,32 +608,24 @@ class DB:
                 Match.is_active == True
             )).order_by(Match.last_message_at.desc().nullslast(), Match.created_at.desc()))
             matches = r.scalars().all()
-            if not matches:
-                return []
-
             out = []
             for m in matches:
                 pid = m.user2_id if m.user1_id == uid else m.user1_id
                 p = await DB.get_user_by_id(pid)
                 if not p:
                     continue
-
                 unread_res = await s.execute(select(func.count(ChatMessage.id)).where(and_(
                     ChatMessage.match_id == m.id,
                     ChatMessage.sender_id != uid,
                     ChatMessage.is_read == False
                 )))
-                unread = unread_res.scalar() or 0
-
                 out.append({
                     "match_id": m.id,
                     "user_id": p["id"],
-                    "telegram_id": p["telegram_id"],
                     "name": p["name"],
                     "age": p["age"],
-                    "photo": p["main_photo"],
                     "compatibility": m.compatibility_score,
-                    "unread": unread,
+                    "unread": unread_res.scalar() or 0
                 })
             return out
 
@@ -789,9 +671,7 @@ class DB:
             return [{
                 "sender_id": m.sender_id,
                 "text": m.text,
-                "reaction": m.reaction,
                 "created_at": m.created_at,
-                "is_read": m.is_read,
             } for m in reversed(r.scalars().all())]
 
     @staticmethod
@@ -864,13 +744,23 @@ class DB:
                 out.append({
                     "gift_code": g.gift_code,
                     "sender_name": sender["name"] if sender else "Кто-то",
-                    "created_at": g.created_at,
                 })
             return out
 
+    @staticmethod
+    async def cleanup_old_guests():
+        async with async_session_maker() as s:
+            threshold = datetime.utcnow() - timedelta(days=config.GUEST_RETENTION_DAYS)
+            await s.execute(delete(GuestVisit).where(GuestVisit.created_at < threshold))
+            await s.commit()
+
 
 class T:
-    WELCOME_NEW = f"🍷 *Добро пожаловать в {BOT_NAME}!*"
+    WELCOME_NEW = f"""
+🍷 *Добро пожаловать в {BOT_NAME}!*
+
+Давай создадим анкету и начнём знакомство ✨
+"""
     WELCOME_BACK = """
 🍷 *С возвращением, {name}!*
 
@@ -886,29 +776,25 @@ class T:
     ASK_GENDER = "💫 Твой пол:"
     ASK_CITY = "📍 Из какого ты города?"
     ASK_PHOTO = "📸 Отправь фото или нажми «Пропустить»:"
-    ASK_BIO = "📝 Расскажи немного о себе или «Пропустить»:"
-    ASK_INTERESTS = "🎯 Выбери несколько интересов:"
-    ASK_LOOKING = "💞 Кого ты хочешь найти?"
+    ASK_BIO = "📝 Расскажи немного о себе или нажми «Пропустить»"
+    ASK_INTERESTS = "🎯 Выбери интересы:"
+    ASK_LOOKING = "💞 Кого ты ищешь?"
     BAD_NAME = "Имя должно быть от 2 до 50 символов."
     BAD_AGE = "Возраст должен быть от 18 до 99."
-    REG_DONE = f"🥂 *Анкета готова!* Добро пожаловать в {BOT_NAME}!"
-    NO_PROFILES = "🍷 Анкеты закончились. Загляни чуть позже."
-    LIKES_LIMIT = "💔 *Лимит лайков на сегодня исчерпан.*"
-    MSG_LIMIT = "💬 *Лимит сообщений на сегодня исчерпан.*"
+    REG_DONE = "🥂 *Анкета готова!*"
+    NO_PROFILES = "🍷 Анкеты закончились."
+    LIKES_LIMIT = "💔 Лимит лайков исчерпан."
+    NO_MATCHES = "Пока нет взаимных симпатий 💕"
+    NO_PROFILE = "Сначала заполни профиль: /start"
+    NO_GUESTS = "Пока нет гостей 👀"
+    NO_MSGS = "Пока нет сообщений 💬"
     NEW_MATCH = """
 💘 *У вас мэтч с {name}!*
 
-{compatibility_line}
+💞 Совместимость: *{compatibility}%*
 
-*Первый вопрос для старта:*
 _{opener}_
 """
-    NO_MATCHES = "Пока нет взаимных симпатий 💕"
-    NO_PROFILE = "Сначала заполни профиль: /start"
-    BANNED = "🚫 Аккаунт заблокирован."
-    NO_GUESTS = "Пока нет гостей 👀"
-    NO_MSGS = "Пока нет сообщений 💬"
-    SHOP = f"🛍 *Винная лавка · {BOT_NAME}*"
 
 
 class KB:
@@ -967,20 +853,18 @@ class KB:
                 InlineKeyboardButton(text="💖 Лайк", callback_data=f"lk:{uid}"),
                 InlineKeyboardButton(text="👎 Пропустить", callback_data=f"dl:{uid}")
             ],
-            [
-                InlineKeyboardButton(text="⭐ Суперлайк", callback_data=f"sl:{uid}"),
-                InlineKeyboardButton(text="💌 Сообщение", callback_data=f"lm:{uid}")
-            ]
+            [InlineKeyboardButton(text="💌 Сообщение", callback_data=f"lm:{uid}")]
         ])
 
     @staticmethod
-    def matches(ms: List[Dict]):
+    def matches(items: List[Dict]):
         rows = []
-        for m in ms[:10]:
+        for item in items[:10]:
             rows.append([InlineKeyboardButton(
-                text=f"💕 {m['name']}, {m['age']}",
-                callback_data=f"ch:{m['user_id']}"
+                text=f"💕 {item['name']}, {item['age']} · {item.get('compatibility', 0)}%",
+                callback_data=f"ch:{item['user_id']}"
             )])
+        rows.append([InlineKeyboardButton(text="⬅️ Меню", callback_data="mn")])
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
     @staticmethod
@@ -1002,7 +886,7 @@ class UserMiddleware(BaseMiddleware):
                 user = await DB.reset_limits(user)
                 if user.get("is_banned"):
                     if isinstance(event, Message):
-                        await event.answer(T.BANNED)
+                        await event.answer("🚫 Аккаунт заблокирован.")
                     return
         data["user"] = user
         return await handler(event, data)
@@ -1013,11 +897,14 @@ def profile_card_text(target: Dict, viewer: Optional[Dict] = None) -> str:
     if viewer:
         compatibility_line = f"\n💞 Совместимость: *{calc_compatibility(viewer, target)}%*"
     paused = "\n⏸ Анкета на паузе" if target.get("is_paused") else ""
+    interests = split_interests(target.get("interests"))
+    interests_text = f"\n🎯 {', '.join(interests)}" if interests else ""
     return (
         f"{DB.get_badge(target)}*{target['name']}*, {target['age']}{DB.get_role_tag(target)}\n"
         f"📍 {target['city']} · {online_status(target.get('last_active_at'))}"
         f"{compatibility_line}\n\n"
         f"{target['bio'] or '_Без описания_'}"
+        f"{interests_text}"
         f"{paused}"
     )
 
@@ -1047,6 +934,7 @@ rt = Router()
 @rt.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, user: Optional[Dict]):
     await state.clear()
+
     if user and user.get("is_profile_complete"):
         unread = await DB.get_unread(user["id"])
         waiting = await DB.get_like_sources_for_user(user["id"], 50)
@@ -1058,7 +946,7 @@ async def cmd_start(message: Message, state: FSMContext, user: Optional[Dict]):
                 views=user["views_count"],
                 matches=user["matches_count"],
                 msgs=unread,
-                likes_waiting=len(waiting)
+                likes_waiting=len(waiting),
             ),
             reply_markup=KB.main(),
             parse_mode=ParseMode.MARKDOWN
@@ -1070,6 +958,7 @@ async def cmd_start(message: Message, state: FSMContext, user: Optional[Dict]):
 
     splash = await message.answer("🍷")
     await animate_text(splash, ["🍷", "🍷✨", f"*{BOT_NAME}*"])
+    await message.answer(T.WELCOME_NEW, parse_mode=ParseMode.MARKDOWN)
     await message.answer(T.ASK_NAME, reply_markup=ReplyKeyboardRemove())
     await state.set_state(RegStates.name)
 
@@ -1094,7 +983,6 @@ async def reg_age(message: Message, state: FSMContext):
     except Exception:
         await message.answer(T.BAD_AGE)
         return
-
     await state.update_data(age=age)
     await message.answer(T.ASK_GENDER, reply_markup=KB.gender())
     await state.set_state(RegStates.gender)
@@ -1136,14 +1024,20 @@ async def reg_skip_photo(callback: CallbackQuery, state: FSMContext):
 
 @rt.message(RegStates.bio)
 async def reg_bio(message: Message, state: FSMContext):
-    await state.update_data(bio=normalize_text(message.text)[:config.MAX_BIO_LEN], selected_interests=[])
+    await state.update_data(
+        bio=normalize_text(message.text)[:config.MAX_BIO_LEN],
+        selected_interests=[]
+    )
     await message.answer(T.ASK_INTERESTS, reply_markup=KB.interests([]))
     await state.set_state(RegStates.interests)
 
 
 @rt.callback_query(RegStates.bio, F.data == "skip")
 async def reg_skip_bio(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(bio="", selected_interests=[])
+    await state.update_data(
+        bio="",
+        selected_interests=[]
+    )
     await callback.message.edit_text(T.ASK_INTERESTS, reply_markup=KB.interests([]))
     await state.set_state(RegStates.interests)
     await callback.answer()
@@ -1179,9 +1073,13 @@ async def reg_interests(callback: CallbackQuery, state: FSMContext):
             selected.append(action)
 
     await state.update_data(selected_interests=selected)
+
     txt = T.ASK_INTERESTS
     if selected:
         txt += f"\n\nВыбрано: {', '.join(selected)}"
+    else:
+        txt += "\n\nПока ничего не выбрано"
+
     await callback.message.edit_text(txt, reply_markup=KB.interests(selected))
     await callback.answer()
 
@@ -1240,7 +1138,7 @@ async def handle_like(callback: CallbackQuery, user: Optional[Dict]):
         md = result["match_data"] or {}
         text = T.NEW_MATCH.format(
             name=target["name"] if target else "?",
-            compatibility_line=f"💞 Совместимость: *{md.get('compatibility', 0)}%*",
+            compatibility=md.get("compatibility", 0),
             opener=md.get("opener", "Как настроение?")
         )
         try:
@@ -1280,12 +1178,81 @@ async def show_matches(message: Message, user: Optional[Dict]):
         await message.answer(T.NO_MATCHES)
 
 
+@rt.callback_query(F.data.startswith("ch:"))
+async def open_chat(callback: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    if not user:
+        return
+    pid = int(callback.data[3:])
+    partner = await DB.get_user_by_id(pid)
+    if not partner:
+        await callback.answer("Не найден")
+        return
+    mid = await DB.get_match_between(user["id"], pid)
+    if not mid:
+        await callback.answer("Нет мэтча")
+        return
+
+    await DB.mark_read(mid, user["id"])
+    msgs = await DB.get_msgs(mid, 10)
+    text = f"💬 *Чат с {partner['name']}*\n\n"
+    if msgs:
+        for m in msgs:
+            sender = "Ты" if m["sender_id"] == user["id"] else partner["name"]
+            time_part = m["created_at"].strftime("%H:%M") if m.get("created_at") else ""
+            text += f"*{sender}:* {m['text']} _{time_part}_\n"
+    else:
+        match_info = await DB.get_match_info(user["id"], pid)
+        opener = match_info["opener_question"] if match_info else random.choice(ICEBREAKERS)
+        text += f"_Начни разговор первым(ой)!_\n\n💡 {opener}"
+
+    await state.update_data(cp=pid, mi=mid)
+    await state.set_state(ChatStates.chatting)
+    await callback.message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+    await callback.answer()
+
+
+@rt.message(ChatStates.chatting)
+async def send_chat_msg(message: Message, state: FSMContext, user: Optional[Dict]):
+    if not user:
+        return
+    data = await state.get_data()
+    mid = data.get("mi")
+    pid = data.get("cp")
+    if not mid:
+        await state.clear()
+        await message.answer("Чат закрыт", reply_markup=KB.main())
+        return
+
+    text = normalize_text(message.text)
+    if not text:
+        return
+
+    await DB.send_msg(mid, user["id"], text)
+
+    partner = await DB.get_user_by_id(pid)
+    if partner:
+        try:
+            await message.bot.send_message(
+                partner["telegram_id"],
+                f"💬 *{user['name']}:* {text}",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        except Exception:
+            pass
+    await message.answer("Отправлено ✨")
+
+
+@rt.message(F.text == "💬 Чаты")
+async def show_chats(message: Message, user: Optional[Dict]):
+    await show_matches(message, user)
+
+
 @rt.message(F.text == "👀 Гости")
 async def show_guests(message: Message, user: Optional[Dict]):
     if not user or not user.get("is_profile_complete"):
         await message.answer(T.NO_PROFILE)
         return
-    guests = await DB.get_guests(user["id"], 20 if DB.is_vip(user) else config.FREE_GUESTS_VISIBLE)
+    guests = await DB.get_guests(user["id"], 20)
     if not guests:
         await message.answer(T.NO_GUESTS)
         return
@@ -1336,13 +1303,21 @@ async def show_my_gifts(callback: CallbackQuery, user: Optional[Dict]):
         await callback.message.answer("🎁 У тебя пока нет подарков.")
         await callback.answer()
         return
-
     txt = "🎁 *Твои подарки:*\n\n"
     for g in gifts:
-        title, emoji = GIFT_OPTIONS.get(g["gift_code"], ("Подарок", "🎁"))
-        txt += f"{emoji} {title} — от *{g['sender_name']}*\n"
+        txt += f"🎁 {g['gift_code']} — от *{g['sender_name']}*\n"
     await callback.message.answer(txt, parse_mode=ParseMode.MARKDOWN)
     await callback.answer()
+
+
+@rt.message(F.text == "🛍 Магазин")
+async def shop_menu(message: Message):
+    await message.answer("🛍 Магазин скоро будет расширен.", parse_mode=ParseMode.MARKDOWN)
+
+
+@rt.message(F.text == "❓ FAQ")
+async def faq(message: Message):
+    await message.answer("❓ FAQ скоро будет дополнен.", parse_mode=ParseMode.MARKDOWN)
 
 
 async def background_cleanup():
@@ -1368,7 +1343,7 @@ async def main():
     dp.callback_query.middleware(UserMiddleware())
     dp.include_router(rt)
 
-    logger.info("%s fixed starting...", BOT_NAME)
+    logger.info("%s v5.0 starting...", BOT_NAME)
 
     cleanup_task = asyncio.create_task(background_cleanup())
 
