@@ -1,5 +1,0 @@
-aiogram
-yookassa
-SQLAlchemy
-python-dotenv
-aiosqlite
