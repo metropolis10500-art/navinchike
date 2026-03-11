@@ -289,7 +289,7 @@ class BroadcastLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # ==========================================
-# DATABASE
+# DATABASE INIT
 # ==========================================
 engine = create_async_engine(config.DATABASE_URL, echo=False)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -1147,13 +1147,13 @@ class KB:
     def no_profiles(vip=False):
         b = [[InlineKeyboardButton(text="🌍 Другие города", callback_data="sr:expand")]]
         b.append([InlineKeyboardButton(text="🔄 Сброс" + (" (VIP)" if not vip else ""), callback_data="sr:reset" if vip else "sr:reset_locked")])
-        b += [[InlineKeyboardButton(text="🔄 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="🔙 Меню", callback_data="mn")]]
+        b += [[InlineKeyboardButton(text="🔄 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="🔙 В меню", callback_data="mn")]]
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def matches(ms):
         b = [[InlineKeyboardButton(text=f"{m['online']} {m['name']},{m['age']}{' '+str(int(m['compat']))+'%' if m.get('compat') else ''}{' 💬'+str(m['unread']) if m.get('unread') else ''}", callback_data=f"ch:{m['user_id']}")] for m in ms[:10]]
-        b.append([InlineKeyboardButton(text="🔙", callback_data="mn")])
+        b.append([InlineKeyboardButton(text="🔙 В меню", callback_data="mn")])
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
@@ -1171,27 +1171,51 @@ class KB:
             [InlineKeyboardButton(text="⚖️ Сравнить", callback_data="sh:compare")],
             [InlineKeyboardButton(text="🎟 Промо", callback_data="sh:promo"), InlineKeyboardButton(text="🎁 Пробный", callback_data="trial:start")],
             [InlineKeyboardButton(text="🤝 Друзья", callback_data="referral:info")],
-            [InlineKeyboardButton(text="🔙", callback_data="mn")]])
+            [InlineKeyboardButton(text="🔙 В меню", callback_data="mn")]])
 
     @staticmethod
     def subs():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="⭐ Light 149₽", callback_data="tf:vip_light")],
-            [InlineKeyboardButton(text="🌟 Standard 349₽", callback_data="tf:vip_standard")],
-            [InlineKeyboardButton(text="👑 Pro 599₽", callback_data="tf:vip_pro")],
-            [InlineKeyboardButton(text="💎 Forever 2999₽", callback_data="tf:vip_lifetime")],
+            [InlineKeyboardButton(text="⭐ Винчик LIGHT — от 149₽", callback_data="tf:vip_light")],
+            [InlineKeyboardButton(text="🌟 Винчик STANDARD — от 349₽", callback_data="tf:vip_standard")],
+            [InlineKeyboardButton(text="👑 Винчик PRO — от 599₽", callback_data="tf:vip_pro")],
+            [InlineKeyboardButton(text="💎 FOREVER — Навсегда", callback_data="tf:vip_lifetime")],
             [InlineKeyboardButton(text="🎁 3 дня бесплатно!", callback_data="trial:start")],
-            [InlineKeyboardButton(text="🔙", callback_data="sh:mn")]])
+            [InlineKeyboardButton(text="⚖️ Сравнить все", callback_data="sh:compare")],
+            [InlineKeyboardButton(text="🔙 В магазин", callback_data="sh:mn")]
+        ])
 
     @staticmethod
     def buy(tier):
-        prices = {"vip_light": [(30,14900),(90,37900),(180,64900)], "vip_standard": [(30,34900),(90,84900),(180,144900)], "vip_pro": [(30,59900),(90,149900),(180,259900)], "vip_lifetime": [(0,299900)]}
+        prices = {
+            "vip_light": [
+                (30, 14900, "1 месяц — 149₽"),
+                (90, 37900, "3 месяца — 379₽ (🔥 -15%)"),
+                (180, 64900, "6 месяцев — 649₽ (💎 -25%)")
+            ],
+            "vip_standard": [
+                (30, 34900, "1 месяц — 349₽"),
+                (90, 84900, "3 месяца — 849₽ (🔥 -19%)"),
+                (180, 144900, "6 месяцев — 1449₽ (💎 -30%)")
+            ],
+            "vip_pro": [
+                (30, 59900, "1 месяц — 599₽"),
+                (90, 149900, "3 месяца — 1499₽ (🔥 -16%)"),
+                (180, 259900, "6 месяцев — 2599₽ (💎 -27%)")
+            ],
+            "vip_lifetime": [
+                (0, 299900, "💎 Навсегда — 2999₽")
+            ]
+        }
+        
         b = []
-        if tier != "vip_lifetime": b.append([InlineKeyboardButton(text="🎁 3 дня бесплатно!", callback_data="trial:start")])
-        for dur, price in prices.get(tier, []):
-            label = f"💳 {price//100}₽" + (f"/{dur}дн" if dur else " навсегда")
+        if tier != "vip_lifetime": 
+            b.append([InlineKeyboardButton(text="🎁 Попробовать 3 дня бесплатно", callback_data="trial:start")])
+            
+        for dur, price, label in prices.get(tier, []):
             b.append([InlineKeyboardButton(text=label, callback_data=f"by:{tier}:{dur}:{price}")])
-        b.append([InlineKeyboardButton(text="🔙", callback_data="sh:subs")])
+            
+        b.append([InlineKeyboardButton(text="🔙 К выбору тарифа", callback_data="sh:subs")])
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
@@ -1215,36 +1239,36 @@ class KB:
     @staticmethod
     def edit():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📝", callback_data="ed:name"), InlineKeyboardButton(text="🎂", callback_data="ed:age"), InlineKeyboardButton(text="🏙", callback_data="ed:city")],
+            [InlineKeyboardButton(text="📝 Имя", callback_data="ed:name"), InlineKeyboardButton(text="🎂 Возраст", callback_data="ed:age"), InlineKeyboardButton(text="🏙 Город", callback_data="ed:city")],
             [InlineKeyboardButton(text="✍️ О себе", callback_data="ed:bio")],
-            [InlineKeyboardButton(text="🔙", callback_data="pv")]])
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="pv")]])
 
     @staticmethod
     def report_reasons():
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🚫 Спам", callback_data="rr:spam"), InlineKeyboardButton(text="🎭 Фейк", callback_data="rr:fake")],
             [InlineKeyboardButton(text="🔞 18+", callback_data="rr:nsfw"), InlineKeyboardButton(text="🤬 Оскорб", callback_data="rr:harass")],
-            [InlineKeyboardButton(text="🔙", callback_data="mn")]])
+            [InlineKeyboardButton(text="🔙 Отмена", callback_data="mn")]])
 
     @staticmethod
-    def admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📊", callback_data="adm:stats"), InlineKeyboardButton(text="🔍", callback_data="adm:search")], [InlineKeyboardButton(text="📢", callback_data="adm:broadcast"), InlineKeyboardButton(text="🚩", callback_data="adm:reports")], [InlineKeyboardButton(text="🎟", callback_data="adm:promo")], [InlineKeyboardButton(text="🔙", callback_data="mn")]])
+    def admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📊 Стата", callback_data="adm:stats"), InlineKeyboardButton(text="🔍 Поиск", callback_data="adm:search")], [InlineKeyboardButton(text="📢 Рассылка", callback_data="adm:broadcast"), InlineKeyboardButton(text="🚩 Репорты", callback_data="adm:reports")], [InlineKeyboardButton(text="🎟 Промокоды", callback_data="adm:promo")], [InlineKeyboardButton(text="🔙 Выход", callback_data="mn")]])
 
     @staticmethod
     def admin_user(uid, banned):
         ban = InlineKeyboardButton(text="✅ Разбан", callback_data=f"au:unban:{uid}") if banned else InlineKeyboardButton(text="🚫 Бан", callback_data=f"au:ban:{uid}")
-        return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👑 VIP", callback_data=f"au:givevip:{uid}"), InlineKeyboardButton(text="🚀", callback_data=f"au:giveboost:{uid}")], [ban], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+        return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👑 Дать VIP", callback_data=f"au:givevip:{uid}"), InlineKeyboardButton(text="🚀 Дать Буст", callback_data=f"au:giveboost:{uid}")], [ban], [InlineKeyboardButton(text="🔙 Админка", callback_data="adm:main")]])
 
     @staticmethod
-    def give_vip_tiers(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⭐", callback_data="gv:vip_light"), InlineKeyboardButton(text="🌟", callback_data="gv:vip_standard")], [InlineKeyboardButton(text="👑", callback_data="gv:vip_pro"), InlineKeyboardButton(text="💎", callback_data="gv:vip_lifetime")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+    def give_vip_tiers(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⭐ Light", callback_data="gv:vip_light"), InlineKeyboardButton(text="🌟 Standard", callback_data="gv:vip_standard")], [InlineKeyboardButton(text="👑 Pro", callback_data="gv:vip_pro"), InlineKeyboardButton(text="💎 Forever", callback_data="gv:vip_lifetime")], [InlineKeyboardButton(text="🔙 Админка", callback_data="adm:main")]])
 
     @staticmethod
-    def back_admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+    def back_admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад", callback_data="adm:main")]])
 
     @staticmethod
-    def broadcast_targets(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌍 Все", callback_data="bc:all"), InlineKeyboardButton(text="Free", callback_data="bc:free")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+    def broadcast_targets(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌍 Всем", callback_data="bc:all"), InlineKeyboardButton(text="Только Free", callback_data="bc:free")], [InlineKeyboardButton(text="🔙 Отмена", callback_data="adm:main")]])
 
     @staticmethod
-    def broadcast_confirm(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✅", callback_data="bc:send")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+    def broadcast_confirm(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✅ Отправить", callback_data="bc:send")], [InlineKeyboardButton(text="🔙 Отмена", callback_data="adm:main")]])
 
 # ==========================================
 # MIDDLEWARE & ROUTER
@@ -1258,7 +1282,7 @@ class UserMiddleware(BaseMiddleware):
             if u:
                 u = await DB.reset_limits(u)
                 if u.get("is_banned"):
-                    if isinstance(event, Message): await event.answer("🚫 Заблокирован.")
+                    if isinstance(event, Message): await event.answer("🚫 Ваш аккаунт заблокирован.")
                     return
         data["user"] = u
         return await handler(event, data)
@@ -1287,8 +1311,8 @@ def card_text(p, v):
     compat = Compatibility.calc_score(v, p); online = DB.get_online_status(p)
     pb = ""
     if p.get("_priority") == "liked_you":
-        pb = "\n❤️ _Лайкнул тебя!_" if DB.is_vip(v) else "\n❤️ _Может быть взаимно..._"
-    elif p.get("_priority") == "other_city": pb = "\n🌍 _Другой город_"
+        pb = "\n❤️ _Лайкнул(а) тебя!_" if DB.is_vip(v) else "\n❤️ _Может быть взаимно..._"
+    elif p.get("_priority") == "other_city": pb = "\n🌍 _Из другого города_"
     return (f"{badge}*{p['name']}*{boost}, {p['age']} {online}\n📍 {p['city']}{pb}\n"
             f"{p['bio'] or ''}\n{'🎨 '+p['interests'] if p.get('interests') else ''}\n\n"
             f"💖 *{compat:.0f}%*")
@@ -1326,7 +1350,7 @@ async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
         elif who: extras = f"\n❤️ Лайков: {len(who)}"
 
         await msg.answer(
-            f"👋 *{user['name']}!*\n\n{st}\n👀 {user['views_count']} · 💕 {user['matches_count']} · 💬 {un}"
+            f"👋 *С возвращением, {user['name']}!*\n\n{st}\n👀 {user['views_count']} просмотров · 💕 {user['matches_count']} мэтчей · 💬 {un} сообщений"
             f"\n⚡ Серия: {streak} дн{extras}{reward_text}{ach_text}",
             reply_markup=KB.main(un, len(who)), parse_mode=ParseMode.MARKDOWN)
     else:
@@ -1503,7 +1527,7 @@ async def rar(msg: Message, state: FSMContext):
 # ==========================================
 @rt.message(F.text=="❤️ Анкеты")
 async def browse(msg: Message, state: FSMContext, user: Optional[Dict]):
-    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ Сначала зарегистрируйся: /start")
     await state.set_state(SearchStates.browsing)
     ps=await DB.search_profiles(user,5)
     if not ps: return await msg.answer("🛑 *Анкеты закончились!*", reply_markup=KB.no_profiles(DB.is_vip(user)), parse_mode=ParseMode.MARKDOWN)
@@ -1541,14 +1565,14 @@ async def next_card(ev, state: FSMContext, user: Dict):
 
 @rt.callback_query(F.data.startswith("lk:"))
 async def h_like(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
-    if not user: return await call.answer("❌")
+    if not user: return await call.answer("❌ Ошибка профиля")
     if not DB.is_vip(user) and user.get("daily_likes_remaining",0)<=0:
         t,k=Monetization.get_likes_limit_msg(user)
         try: await call.message.edit_caption(caption=t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
         except: await call.message.edit_text(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
         return
         
-    if not await anti_spam.check(call.from_user.id,"like"): return await call.answer("⚠️ !",show_alert=True)
+    if not await anti_spam.check(call.from_user.id,"like"): return await call.answer("⚠️ Не так быстро!",show_alert=True)
     
     tid=int(call.data[3:])
     res=await DB.add_like(user["id"],tid)
@@ -1563,18 +1587,18 @@ async def h_like(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
         t=await DB.get_user_by_id(tid)
         tn=t["name"] if t else "?"
         compat=res.get("compat",0)
-        try: await call.message.edit_caption(caption=f"🔥 *Мэтч с {tn}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
-        except: await call.message.edit_text(f"🔥 *Мэтч с {tn}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
+        try: await call.message.edit_caption(caption=f"🔥 *Мэтч с {tn}!* \n💖 Совместимость: {compat}%", parse_mode=ParseMode.MARKDOWN)
+        except: await call.message.edit_text(f"🔥 *Мэтч с {tn}!* \n💖 Совместимость: {compat}%", parse_mode=ParseMode.MARKDOWN)
         if t:
-            try: await call.bot.send_message(t["telegram_id"], f"🔥 *Мэтч с {user['name']}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
+            try: await call.bot.send_message(t["telegram_id"], f"🔥 *У вас новый мэтч с {user['name']}!* \n💖 Совместимость: {compat}%", parse_mode=ParseMode.MARKDOWN)
             except: pass
             
         # Достижения
         user=await DB.get_user(call.from_user.id)
         achs=await Gamification.check_achievements(user)
-        if achs: await call.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
+        if achs: await call.message.answer("🏆 Открыто достижение:\n" + "\n".join(a["title"] for a in achs))
     else:
-        await call.answer("❤️")
+        await call.answer("❤️ Лайк отправлен")
         
     await next_card(call, state, user)
     await call.answer()
@@ -1582,7 +1606,7 @@ async def h_like(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
 @rt.callback_query(F.data.startswith("sl:"))
 async def h_superlike(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    if user.get("daily_superlikes_remaining",0)<=0: return await call.answer("⭐ Суперлайки 👑 VIP!", show_alert=True)
+    if user.get("daily_superlikes_remaining",0)<=0: return await call.answer("⭐ Суперлайки закончились. Доступно для VIP!", show_alert=True)
     
     tid=int(call.data[3:])
     res=await DB.add_like(user["id"],tid,is_super=True)
@@ -1599,9 +1623,9 @@ async def h_superlike(call: CallbackQuery, state: FSMContext, user: Optional[Dic
             try: await call.bot.send_message(t["telegram_id"], f"🔥 *Мэтч с {user['name']}!* ", parse_mode=ParseMode.MARKDOWN)
             except: pass
     else:
-        await call.answer("⭐!")
+        await call.answer("⭐ Суперлайк отправлен!")
         if t:
-            try: await call.bot.send_message(t["telegram_id"], f"⭐ *{user['name']}* отправил суперлайк!", parse_mode=ParseMode.MARKDOWN)
+            try: await call.bot.send_message(t["telegram_id"], f"⭐ *{user['name']}* отправил(а) тебе суперлайк!", parse_mode=ParseMode.MARKDOWN)
             except: pass
             
     user=await DB.get_user(call.from_user.id)
@@ -1624,14 +1648,14 @@ async def sr_expand(call: CallbackQuery, state: FSMContext, user: Optional[Dict]
         await state.set_state(SearchStates.browsing)
         await show_card(call.message,ps[0],user)
     else:
-        await call.message.edit_text("⏳ Позже!")
+        await call.message.edit_text("⏳ Анкет пока нет. Загляни позже!")
     await call.answer()
 
 @rt.callback_query(F.data=="sr:reset")
 async def sr_reset(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
-    if not user or not DB.is_vip(user): return await call.answer("👑 VIP!", show_alert=True)
+    if not user or not DB.is_vip(user): return await call.answer("👑 Доступно только для VIP!", show_alert=True)
     cnt=await DB.reset_dislikes(user["id"])
-    await call.answer(f"🔄 {cnt}!", show_alert=True)
+    await call.answer(f"🔄 История очищена. Сброшено {cnt} анкет!", show_alert=True)
     user=await DB.get_user(call.from_user.id)
     ps=await DB.search_profiles(user,5)
     if ps:
@@ -1641,7 +1665,7 @@ async def sr_reset(call: CallbackQuery, state: FSMContext, user: Optional[Dict])
 
 @rt.callback_query(F.data=="sr:reset_locked")
 async def sr_locked(call: CallbackQuery, user: Optional[Dict]):
-    await call.message.answer("👑 *Сброс — только VIP!*\n\n🌟 От 349₽/мес", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌟 Standard", callback_data="tf:vip_standard")],[InlineKeyboardButton(text="🎁 Бесплатно", callback_data="trial:start")]]), parse_mode=ParseMode.MARKDOWN)
+    await call.message.answer("👑 *Сброс дизлайков доступен только VIP-пользователям!*\n\n🌟 От 349₽/мес", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌟 Тариф Standard", callback_data="tf:vip_standard")],[InlineKeyboardButton(text="🎁 Попробовать бесплатно", callback_data="trial:start")]]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="sr:retry")
@@ -1653,27 +1677,34 @@ async def sr_retry(call: CallbackQuery, state: FSMContext, user: Optional[Dict])
         await state.set_state(SearchStates.browsing)
         await show_card(call.message,ps[0],user)
     else:
-        await call.answer("⏳ Пока нет", show_alert=True)
+        await call.answer("⏳ Новых анкет пока нет", show_alert=True)
     await call.answer()
 
 # ==========================================
 # MATCHES, CHAT, ICEBREAKER
 # ==========================================
+@rt.message(F.text.startswith("💬"))
+async def show_chats(msg: Message, user: Optional[Dict]):
+    if not user or not user.get("is_profile_complete"): return
+    ms=await DB.get_matches(user["id"])
+    if ms: await msg.answer("💬 *Твои диалоги:*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    else: await msg.answer("⏳ У тебя пока нет активных диалогов.")
+
 @rt.message(F.text.startswith("💝"))
 async def show_matches(msg: Message, user: Optional[Dict]):
-    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ Для начала зарегистрируйся: /start")
     ms=await DB.get_matches(user["id"])
-    if ms: await msg.answer(f"💕 *Мэтчи ({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
-    else: await msg.answer("⏳ Пока нет мэтчей!")
+    if ms: await msg.answer(f"💕 *Твои мэтчи ({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    else: await msg.answer("⏳ У тебя пока нет мэтчей. Продолжай ставить лайки!")
 
 @rt.callback_query(F.data.startswith("ch:"))
 async def start_chat(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     pid=int(call.data[3:])
     p=await DB.get_user_by_id(pid)
-    if not p: return await call.answer("?")
+    if not p: return await call.answer("Пользователь не найден")
     mid=await DB.get_match_between(user["id"],pid)
-    if not mid: return await call.answer("Нет мэтча")
+    if not mid: return await call.answer("Мэтч больше не существует")
     
     await DB.mark_read(mid, user["id"])
     msgs=await DB.get_msgs(mid,5)
@@ -1714,7 +1745,7 @@ async def send_msg(msg: Message, state: FSMContext, user: Optional[Dict]):
     mid,pid=d.get("mi"),d.get("cp")
     if not mid:
         await state.clear()
-        return await msg.answer("Закрыт", reply_markup=KB.main())
+        return await msg.answer("Чат закрыт", reply_markup=KB.main())
         
     if not DB.is_vip(user) and user.get("daily_messages_remaining",0)<=0:
         p=await DB.get_user_by_id(pid)
@@ -1726,6 +1757,7 @@ async def send_msg(msg: Message, state: FSMContext, user: Optional[Dict]):
         photo_id = msg.photo[-1].file_id
         await DB.send_msg(mid, user["id"], "[Фото]", photo_id=photo_id)
     else:
+        if not msg.text: return
         await DB.send_msg(mid, user["id"], msg.text)
         
     await DB.dec_messages(user["telegram_id"])
@@ -1749,7 +1781,7 @@ async def unmatch(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     await DB.unmatch(user["id"],int(call.data[3:]))
     await state.clear()
-    await call.message.edit_text("💔 Удалено.")
+    await call.message.edit_text("💔 Мэтч удален.")
     await call.answer()
 
 @rt.callback_query(F.data=="bm")
@@ -1757,26 +1789,19 @@ async def back_matches(call: CallbackQuery, state: FSMContext, user: Optional[Di
     await state.clear()
     if not user: return
     ms=await DB.get_matches(user["id"])
-    if ms: await call.message.edit_text(f"💕 *({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    if ms: await call.message.edit_text(f"💕 *Твои мэтчи ({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
     else: await call.message.edit_text("⏳ Нет мэтчей")
     await call.answer()
-
-@rt.message(F.text.startswith("💬"))
-async def show_chats(msg: Message, user: Optional[Dict]):
-    if not user or not user.get("is_profile_complete"): return
-    ms=await DB.get_matches(user["id"])
-    if ms: await msg.answer("💬 *Диалоги:*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
-    else: await msg.answer("⏳ Нет сообщений")
 
 @rt.message(F.text=="👀 Гости")
 async def show_guests(msg: Message, user: Optional[Dict]):
     if not user or not user.get("is_profile_complete"): return
     lim=20 if DB.is_vip(user) else config.FREE_GUESTS_VISIBLE
     gs=await DB.get_guests(user["id"],lim)
-    if not gs: return await msg.answer("⏳ Нет гостей")
-    txt="👀 *Гости:*\n\n"
-    for i,g in enumerate(gs,1): txt+=f"{i}. {g['name']},{g['age']}—{g['city']}\n"
-    if not DB.is_vip(user): txt+="\n👑 _Больше — с VIP_"
+    if not gs: return await msg.answer("⏳ У тебя пока нет гостей профиля.")
+    txt="👀 *Твои гости:*\n\n"
+    for i,g in enumerate(gs,1): txt+=f"{i}. {g['name']}, {g['age']} — {g['city']}\n"
+    if not DB.is_vip(user): txt+="\n👑 _Больше гостей доступно с VIP-статусом._"
     await msg.answer(txt, parse_mode=ParseMode.MARKDOWN)
 
 # ==========================================
@@ -1792,35 +1817,35 @@ async def who_liked(call: CallbackQuery, user: Optional[Dict]):
         return await call.answer()
         
     users=await DB.get_likes_received(user["id"],20)
-    if not users: return await call.answer("⏳ Пока нет", show_alert=True)
+    if not users: return await call.answer("⏳ Новых лайков пока нет", show_alert=True)
     b = [[InlineKeyboardButton(text=f"{'⭐' if u.get('is_super_like') else '❤️'} {u['name']},{u['age']}", callback_data=f"wl:{u['id']}")] for u in users[:10]]
-    b.append([InlineKeyboardButton(text="🔙", callback_data="mn")])
-    await call.message.edit_text(f"❤️ *Лайки ({len(users)}):*", reply_markup=InlineKeyboardMarkup(inline_keyboard=b), parse_mode=ParseMode.MARKDOWN)
+    b.append([InlineKeyboardButton(text="🔙 В меню", callback_data="mn")])
+    await call.message.edit_text(f"❤️ *Твои лайки ({len(users)}):*", reply_markup=InlineKeyboardMarkup(inline_keyboard=b), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data.startswith("wl:"))
 async def who_liked_view(call: CallbackQuery, user: Optional[Dict]):
     if not user or not DB.is_vip(user): return
     p=await DB.get_user_by_id(int(call.data[3:]))
-    if not p: return await call.answer("?")
+    if not p: return await call.answer("Пользователь не найден")
     txt=card_text(p, user)
     if p.get("like_message"): txt += f"\n\n💌 _{p['like_message']}_"
     await call.message.edit_text(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❤️ Лайк", callback_data=f"lk:{p['id']}"), InlineKeyboardButton(text="👎", callback_data=f"dl:{p['id']}")],
-        [InlineKeyboardButton(text="🔙", callback_data="likes:list")]
+        [InlineKeyboardButton(text="❤️ Ответить взаимностью", callback_data=f"lk:{p['id']}"), InlineKeyboardButton(text="👎", callback_data=f"dl:{p['id']}")],
+        [InlineKeyboardButton(text="🔙 К списку лайков", callback_data="likes:list")]
     ]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="trial:start")
 async def trial(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    if DB.is_vip(user): return await call.answer("👑 Уже VIP!", show_alert=True)
-    if user.get("trial_used"): return await call.answer("❌ Уже использован!", show_alert=True)
+    if DB.is_vip(user): return await call.answer("👑 У тебя уже есть VIP!", show_alert=True)
+    if user.get("trial_used"): return await call.answer("❌ Пробный период уже был использован!", show_alert=True)
     ok=await DB.activate_trial(user["id"])
     if ok:
-        await call.message.answer("🎉 *VIP Light 3 дня!*\n\n❤️ 100 лайков · 💬 ∞ сообщений · ⭐ 1 суперлайк\n\nЧерез 3 дня — автоотключение.", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
+        await call.message.answer("🎉 *VIP Light на 3 дня активирован!*\n\n❤️ 100 лайков ежедневно\n💬 Безлимитные сообщения\n⭐ 1 суперлайк в день\n\nЧерез 3 дня статус автоматически отключится.", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
     else:
-        await call.answer("❌ Уже использован", show_alert=True)
+        await call.answer("❌ Пробный период уже использован", show_alert=True)
     await call.answer()
 
 @rt.callback_query(F.data=="referral:info")
@@ -1829,10 +1854,10 @@ async def ref_info(call: CallbackQuery, user: Optional[Dict]):
     code=user.get("referral_code","???"); bonus=user.get("referral_bonus_count",0)
     me = await call.bot.me()
     link=f"https://t.me/{me.username}?start={code}"
-    await call.message.answer(f"🤝 *Пригласи друга!*\n\n`{link}`\n\nТебе: 🚀 буст · Другу: +5 лайков\n\nПриглашено: *{bonus}*",
+    await call.message.answer(f"🤝 *Пригласи друга и получи бонусы!*\n\nТвоя ссылка:\n`{link}`\n\n🎁 Тебе: 🚀 1 Буст\n🎁 Другу: +5 лайков к лимиту\n\nПриглашено друзей: *{bonus}*",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📤 Поделиться", url=f"https://t.me/share/url?url={link}&text=Присоединяйся!")],
-            [InlineKeyboardButton(text="🔙", callback_data="pv")]
+            [InlineKeyboardButton(text="📤 Отправить другу", url=f"https://t.me/share/url?url={link}&text=Тут классные знакомства, присоединяйся!")],
+            [InlineKeyboardButton(text="🔙 В профиль", callback_data="pv")]
         ]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
@@ -1844,14 +1869,13 @@ async def show_rewards(msg: Message, user: Optional[Dict]):
     if not user: return
     streak = user.get("streak_days", 0)
     day_in_cycle = ((streak - 1) % 7) + 1 if streak > 0 else 1
-    txt = f"🎁 *Ежедневные награды*\n\n⚡ Серия: *{streak} дней*\n\n"
+    txt = f"🎁 *Твои ежедневные награды*\n\n⚡ Серия заходов: *{streak} дней подряд*\n\n"
     for day, reward in Gamification.DAILY_REWARDS.items():
         marker = "✅" if day < day_in_cycle else ("🎯" if day == day_in_cycle else "⏳")
         txt += f"{marker} День {day}: {reward['text']}\n"
-    txt += f"\n_Заходи каждый день — получай награды!_"
+    txt += f"\n_Заходи в бота каждый день, чтобы забирать крутые бонусы!_"
     await msg.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏆 Достижения", callback_data="achievements")],
-        [InlineKeyboardButton(text="🔙", callback_data="mn")]
+        [InlineKeyboardButton(text="🏆 Мои достижения", callback_data="achievements")],
     ]), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="achievements")
@@ -1860,13 +1884,13 @@ async def show_achievements(call: CallbackQuery, user: Optional[Dict]):
     async with async_session_maker() as s:
         earned = await s.execute(select(Achievement.achievement_type).where(Achievement.user_id == user["id"]))
         earned_set = set(r[0] for r in earned.fetchall())
-    txt = "🏆 *Достижения*\n\n"
+    txt = "🏆 *Твои достижения*\n\n"
     for ach_type, info in Gamification.ACHIEVEMENTS.items():
         status = "✅" if ach_type in earned_set else "🔒"
         txt += f"{status} {info['title']} — _{info['desc']}_\n"
-    txt += f"\n\nПолучено: *{len(earned_set)}/{len(Gamification.ACHIEVEMENTS)}*"
+    txt += f"\n\nОткрыто: *{len(earned_set)} из {len(Gamification.ACHIEVEMENTS)}*"
     await call.message.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔙", callback_data="pv")]
+        [InlineKeyboardButton(text="🔙 В профиль", callback_data="pv")]
     ]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
@@ -1875,7 +1899,7 @@ async def show_achievements(call: CallbackQuery, user: Optional[Dict]):
 # ==========================================
 @rt.message(F.text=="👤 Профиль")
 async def show_profile(msg: Message, user: Optional[Dict]):
-    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ Сначала создай анкету: /start")
     await DB.update_hidden_likes(user["id"]); user=await DB.get_user(msg.from_user.id)
     txt=profile_text(user); hidden=user.get("hidden_likes_count",0)
     if user.get("main_photo"):
@@ -1895,21 +1919,21 @@ async def back_profile(call: CallbackQuery, user: Optional[Dict]):
 
 @rt.callback_query(F.data=="pe")
 async def pe(call: CallbackQuery):
-    try: await call.message.edit_caption(caption="✏️", reply_markup=KB.edit())
-    except: await call.message.edit_text("✏️", reply_markup=KB.edit())
+    try: await call.message.edit_caption(caption="✏️ Редактирование анкеты", reply_markup=KB.edit())
+    except: await call.message.edit_text("✏️ Редактирование анкеты", reply_markup=KB.edit())
     await call.answer()
 
 @rt.callback_query(F.data=="settings")
 async def settings(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    inv_note = "\n\n🥷 _Невидимка: лайкай, не оставляя следов в гостях._" if DB.is_vip(user) else "\n\n🥷 _Невидимка — только для VIP_"
-    await call.message.answer(f"⚙️ *Настройки*{inv_note}", reply_markup=KB.settings(user), parse_mode=ParseMode.MARKDOWN)
+    inv_note = "\n\n🥷 _Режим Невидимки позволяет смотреть чужие анкеты, не оставляя следов в разделе Гости._" if DB.is_vip(user) else "\n\n🥷 _Режим Невидимки доступен только для VIP пользователей._"
+    await call.message.answer(f"⚙️ *Настройки профиля*{inv_note}", reply_markup=KB.settings(user), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="set:invisible")
 async def toggle_invisible(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    if not DB.is_vip(user): return await call.answer("👑 Невидимка — VIP!", show_alert=True)
+    if not DB.is_vip(user): return await call.answer("👑 Режим Невидимки доступен только с VIP!", show_alert=True)
     new_val = await DB.toggle_invisible(user["telegram_id"])
     await call.answer(f"🥷 Невидимка {'включена ✅' if new_val else 'выключена ❌'}", show_alert=True)
     user = await DB.get_user(call.from_user.id)
@@ -1917,7 +1941,7 @@ async def toggle_invisible(call: CallbackQuery, user: Optional[Dict]):
 
 @rt.callback_query(F.data=="ed:looking")
 async def edit_looking(call: CallbackQuery, state: FSMContext):
-    await call.message.answer("🎯 Кого ищешь?", reply_markup=KB.looking())
+    await call.message.answer("🎯 Кого ты хочешь искать?", reply_markup=KB.looking())
     await state.update_data(editing_looking=True)
     await call.answer()
 
@@ -1929,39 +1953,39 @@ async def handle_looking_edit(call: CallbackQuery, state: FSMContext, user: Opti
         lf = call.data[2:]
         await DB.update_user(call.from_user.id, looking_for=LookingFor(lf))
         await state.update_data(editing_looking=False)
-        await call.message.edit_text(f"🎯 Ищу: {'👨' if lf=='male' else '👩' if lf=='female' else '🌈 Всех'}")
+        await call.message.edit_text(f"🎯 Теперь мы ищем: {'👨 Мужчин' if lf=='male' else '👩 Женщин' if lf=='female' else '🌈 Всех подряд'}")
         await call.answer()
 
 @rt.callback_query(F.data=="ed:name")
 async def en(call: CallbackQuery, state: FSMContext): 
-    await call.message.answer("📝:")
+    await call.message.answer("📝 Введи свое новое имя:")
     await state.set_state(EditStates.edit_name)
     await call.answer()
 
 @rt.message(EditStates.edit_name)
 async def sn(msg: Message, state: FSMContext):
-    if len(msg.text.strip())<2: return await msg.answer("❌")
+    if len(msg.text.strip())<2: return await msg.answer("❌ Имя слишком короткое.")
     await DB.update_user(msg.from_user.id, name=msg.text.strip())
     await state.clear()
-    await msg.answer("✅", reply_markup=KB.main())
+    await msg.answer("✅ Имя успешно обновлено!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:age")
 async def ea(call: CallbackQuery, state: FSMContext): 
-    await call.message.answer("🎂:")
+    await call.message.answer("🎂 Напиши свой реальный возраст цифрами:")
     await state.set_state(EditStates.edit_age)
     await call.answer()
 
 @rt.message(EditStates.edit_age)
 async def sa(msg: Message, state: FSMContext):
     try: a=int(msg.text.strip()); assert 18<=a<=99
-    except: return await msg.answer("❌")
+    except: return await msg.answer("❌ Введи число от 18 до 99.")
     await DB.update_user(msg.from_user.id, age=a)
     await state.clear()
-    await msg.answer("✅", reply_markup=KB.main())
+    await msg.answer("✅ Возраст успешно обновлен!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:city")
 async def ec(call: CallbackQuery, state: FSMContext): 
-    await call.message.answer("🏙:")
+    await call.message.answer("🏙 Напиши свой новый город:")
     await state.set_state(EditStates.edit_city)
     await call.answer()
 
@@ -1969,11 +1993,11 @@ async def ec(call: CallbackQuery, state: FSMContext):
 async def sc(msg: Message, state: FSMContext): 
     await DB.update_user(msg.from_user.id, city=msg.text.strip().title())
     await state.clear()
-    await msg.answer("✅", reply_markup=KB.main())
+    await msg.answer("✅ Город успешно обновлен!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:bio")
 async def eb(call: CallbackQuery, state: FSMContext): 
-    await call.message.answer("✍️:")
+    await call.message.answer("✍️ Напиши пару слов о себе:")
     await state.set_state(EditStates.edit_bio)
     await call.answer()
 
@@ -1981,14 +2005,14 @@ async def eb(call: CallbackQuery, state: FSMContext):
 async def sb(msg: Message, state: FSMContext): 
     await DB.update_user(msg.from_user.id, bio=msg.text.strip()[:500])
     await state.clear()
-    await msg.answer("✅", reply_markup=KB.main())
+    await msg.answer("✅ Описание профиля обновлено!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:interests")
 async def ei(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     cur=set(i.strip() for i in (user.get("interests") or "").split(",") if i.strip())
     await state.update_data(si=cur)
-    await call.message.answer("🎨", reply_markup=KB.interests(cur))
+    await call.message.answer("🎨 Выбери свои интересы:", reply_markup=KB.interests(cur))
     await state.set_state(EditStates.edit_interests)
     await call.answer()
 
@@ -1999,11 +2023,11 @@ async def si(call: CallbackQuery, state: FSMContext):
         d=await state.get_data()
         await DB.update_user(call.from_user.id, interests=",".join(d.get("si",set())))
         await state.clear()
-        await call.message.edit_text("✅")
-        await call.message.answer("✅", reply_markup=KB.main())
+        await call.message.edit_text("✅ Интересы сохранены.")
+        await call.message.answer("✅ Отлично!", reply_markup=KB.main())
         user=await DB.get_user(call.from_user.id)
         achs=await Gamification.check_achievements(user)
-        if achs: await call.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
+        if achs: await call.message.answer("🏆 Открыто достижение:\n" + "\n".join(a["title"] for a in achs))
     else:
         d=await state.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
         sel.discard(item) if item in sel else sel.add(item)
@@ -2014,7 +2038,7 @@ async def si(call: CallbackQuery, state: FSMContext):
 @rt.callback_query(F.data=="ed:agerange")
 async def ear(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    await call.message.answer(f"🎯 {user['age_from']}-{user['age_to']}\n`18-30`", parse_mode=ParseMode.MARKDOWN)
+    await call.message.answer(f"🎯 Твой текущий фильтр: {user['age_from']}-{user['age_to']}\nНапиши новый диапазон (например, `18-30`):", parse_mode=ParseMode.MARKDOWN)
     await state.set_state(EditStates.edit_age_range)
     await call.answer()
 
@@ -2025,14 +2049,14 @@ async def sar(msg: Message, state: FSMContext):
         af,at=int(p[0]),int(p[1])
         assert 18<=af<=99 and 18<=at<=99 and af<=at
     except: 
-        return await msg.answer("❌ `18-30`", parse_mode=ParseMode.MARKDOWN)
+        return await msg.answer("❌ Ошибка. Напиши формат вот так: `18-30`", parse_mode=ParseMode.MARKDOWN)
     await DB.update_user(msg.from_user.id, age_from=af, age_to=at)
     await state.clear()
-    await msg.answer(f"✅ {af}-{at}", reply_markup=KB.main())
+    await msg.answer(f"✅ Теперь ищем людей от {af} до {at} лет.", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:photo")
 async def ep(call: CallbackQuery, state: FSMContext): 
-    await call.message.answer("📸:")
+    await call.message.answer("📸 Отправь мне своё лучшее фото:")
     await state.set_state(EditStates.add_photo)
     await call.answer()
 
@@ -2043,82 +2067,47 @@ async def sp(msg: Message, state: FSMContext, user: Optional[Dict]):
     pl=[p for p in (user.get("photos","") or "").split(",") if p.strip()]
     if len(pl)>=5: 
         await state.clear()
-        return await msg.answer("❌ Макс 5!", reply_markup=KB.main())
+        return await msg.answer("❌ Максимум 5 фото. Удали старые, чтобы добавить новые.", reply_markup=KB.main())
     pl.append(pid)
     await DB.update_user(msg.from_user.id, photos=",".join(pl), main_photo=pid)
     await state.clear()
-    await msg.answer("📸 Фото!", reply_markup=KB.main())
+    await msg.answer("📸 Главное фото успешно обновлено!", reply_markup=KB.main())
     user=await DB.get_user(msg.from_user.id)
     achs=await Gamification.check_achievements(user)
-    if achs: await msg.answer("🏆 " + ", ".join(a["title"] for a in achs))
+    if achs: await msg.answer("🏆 Открыто достижение:\n" + "\n".join(a["title"] for a in achs))
 
 # ==========================================
 # ПРЕМИУМ МАГАЗИН И ТАРИФЫ
 # ==========================================
-@rt.callback_query(F.data=="profile:boost")
-async def pboost(call: CallbackQuery, user: Optional[Dict]):
-    if not user: return
-    has=user.get("boost_count",0)>0; act=DB.is_boosted(user)
-    st = f"\n🔥 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
-    if has: st+=f"\n🚀 {user['boost_count']}"
-    if not has and not act: st="\n❌ Нет бустов"
-    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Активировать", callback_data="bo:act:profile")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="🔙", callback_data="pv")]]))
-    try: await call.message.edit_caption(caption=f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
-    except: await call.message.edit_text(f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
-    await call.answer()
-
-@rt.callback_query(F.data.startswith("bo:act"))
-async def act_boost(call: CallbackQuery, user: Optional[Dict]):
-    if not user or user.get("boost_count",0)<=0: return await call.answer("❌ !", show_alert=True)
-    ok=await DB.use_boost(user["id"])
-    if ok:
-        u=await DB.get_user(call.from_user.id)
-        back="pv" if ":profile" in call.data else "sh:mn"
-        try: await call.message.edit_caption(caption=f"🚀 *Активирован!*\nДо {u['boost_expires_at'].strftime('%d.%m %H:%M')} · {u['boost_count']}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]), parse_mode=ParseMode.MARKDOWN)
-        except: await call.message.edit_text(f"✅!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]))
-    await call.answer()
-
 @rt.message(F.text=="💎 Магазин")
 async def shop(msg: Message):
-    await msg.answer(f"💎 *{BOT_NAME}* — Магазин", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
+    txt = (
+        "🛍 *Магазин премиум-функций*\n\n"
+        "Прокачай свой профиль, чтобы получать в 5 раз больше внимания и находить идеальные мэтчи быстрее!"
+    )
+    await msg.answer(txt, reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="sh:mn")
 async def shmn(call: CallbackQuery): 
-    await call.message.edit_text(f"💎 *Магазин*", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
+    txt = (
+        "🛍 *Магазин премиум-функций*\n\n"
+        "Прокачай свой профиль, чтобы получать в 5 раз больше внимания и находить идеальные мэтчи быстрее!"
+    )
+    await call.message.edit_text(txt, reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="sh:compare")
 async def shcmp(call: CallbackQuery):
     txt = (
-        "💎 *СРАВНЕНИЕ ТАРИФОВ* 💎\n"
-        "Выбери свой уровень доступа к знакомствам:\n\n"
-        
-        "🆓 *БЕСПЛАТНЫЙ*\n"
-        "├ ❤️ 15 лайков в день\n"
-        "├ 💬 5 сообщений новым мэтчам\n"
-        "└ 👁 Видно только 2 последних гостей\n\n"
-        
-        "⭐ *Винчик LIGHT* (от 149₽)\n"
-        "├ ❤️ 100 лайков\n"
-        "├ 💬 Безлимитные сообщения\n"
-        "├ ⭐ 1 Суперлайк в день\n"
-        "├ 👁 Видно 10 последних гостей\n"
-        "└ 🚀 Приоритетный показ анкеты\n\n"
-        
-        "🌟 *Винчик STANDARD* (от 349₽)\n"
-        "├ ❤️ *Безлимит* лайков\n"
-        "├ ⭐ 2 Суперлайка в день\n"
-        "├ 👁 Видно *всех* гостей\n"
-        "├ 💖 *Видно, кто тебя лайкнул*\n"
-        "└ 🥷 Режим Невидимки\n\n"
-        
-        "👑 *Винчик PRO* (от 599₽)\n"
-        "├ ⭐ 5 Суперлайков в день\n"
-        "├ 🚀 *3 Буста* в месяц бесплатно\n"
-        "└ 🏆 Твоя анкета всегда в ТОПе\n\n"
-        
-        "💎 *Винчик FOREVER* (2999₽)\n"
-        "└ Все фишки PRO навсегда! Единоразовая оплата."
+        "⚖️ *Краткое сравнение тарифов*\n\n"
+        "⭐ *LIGHT*\n"
+        "100 лайков, безлимит сообщений и 1 Суперлайк в день. Отличный старт.\n\n"
+        "🌟 *STANDARD* 🏆 _Хит продаж_\n"
+        "Скрытые лайки (видишь кто тебя лайкнул), безлимит анкет, режим Невидимки.\n\n"
+        "👑 *PRO*\n"
+        "Твоя анкета всегда в ТОПе. Максимум показов, 5 Суперлайков в день и 3 бесплатных Буста каждый месяц.\n\n"
+        "💎 *FOREVER*\n"
+        "Уровень PRO навсегда за один платеж."
     )
     await call.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
@@ -2126,8 +2115,8 @@ async def shcmp(call: CallbackQuery):
 @rt.callback_query(F.data=="sh:subs")
 async def shsubs(call: CallbackQuery): 
     txt = (
-        "🛍 *ПРЕМИУМ МАГАЗИН*\n\n"
-        "Прокачай свой профиль и находи пары в 5 раз быстрее! Выбери тариф, чтобы узнать подробности 👇"
+        "💎 *ПРЕМИУМ КЛУБ*\n\n"
+        "Выбери статус, который подходит именно тебе. Нажми на тариф, чтобы узнать, что внутри 👇"
     )
     await call.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
@@ -2137,41 +2126,41 @@ async def tf(call: CallbackQuery):
     tier = call.data[3:]
     descs = {
         "vip_light": (
-            "⭐ *ТАРИФ ВИНЧИК LIGHT* ⭐\n"
-            "_Идеально для активного старта_\n\n"
-            "✅ *100 лайков* каждый день\n"
-            "✅ *Безлимит* на сообщения мэтчам\n"
-            "✅ *1 Суперлайк* ежедневно\n"
-            "✅ *До 10 гостей* в истории просмотров\n"
-            "✅ Приоритет при показе твоей анкеты\n\n"
-            "👇 _Выбери период подписки:_"
+            "⭐ *ТАРИФ LIGHT* \n"
+            "_Сними базовые ограничения_\n\n"
+            "❤️ *100 лайков* в день\n"
+            "💬 *Безлимитные* сообщения мэтчам\n"
+            "👁 До 10 гостей профиля\n"
+            "🌟 *1 Суперлайк* ежедневно\n"
+            "🚀 Приоритет в поиске\n\n"
+            "👇 _Выбери период:_"
         ),
         "vip_standard": (
-            "🌟 *ТАРИФ ВИНЧИК STANDARD* 🌟\n"
-            "_Наш самый популярный выбор!_\n\n"
-            "✅ *Скрытые лайки:* сразу видишь, кто тебя лайкнул!\n"
-            "✅ *Безлимитные* лайки\n"
-            "✅ *Безлимитные* гости профиля\n"
-            "✅ *Режим Невидимки* (смотри анкеты без следов)\n"
-            "✅ *2 Суперлайка* ежедневно\n\n"
-            "👇 _Выбери период подписки:_"
+            "🌟 *ТАРИФ STANDARD*\n"
+            "_Самый популярный выбор_ 🏆\n\n"
+            "Включает всё из Light, а также:\n"
+            "💖 *Скрытые лайки:* сразу видишь, кому ты нравишься!\n"
+            "♾ *Полный безлимит* на лайки и гостей\n"
+            "🥷 *Невидимка:* смотри анкеты без следов\n"
+            "🌟 *2 Суперлайка* ежедневно\n\n"
+            "👇 _Выбери период:_"
         ),
         "vip_pro": (
-            "👑 *ТАРИФ ВИНЧИК PRO* 👑\n"
-            "_Для тех, кто хочет максимум внимания_\n\n"
-            "✅ *Всё из тарифа Standard*\n"
-            "✅ *Анкета в ТОПе:* тебя видят первыми!\n"
-            "✅ *3 бесплатных Буста* каждый месяц\n"
-            "✅ *5 Суперлайков* ежедневно\n"
-            "✅ Уникальный значок 👑 в профиле\n\n"
-            "👇 _Выбери период подписки:_"
+            "👑 *ТАРИФ PRO*\n"
+            "_Для тех, кто забирает лучшее_\n\n"
+            "Включает всё из Standard, а также:\n"
+            "🔥 *Ты всегда в ТОПе:* твою анкету видят первой\n"
+            "🚀 *3 бесплатных Буста* каждый месяц\n"
+            "🌟 *5 Суперлайков* ежедневно\n"
+            "👑 Эксклюзивная корона в профиле\n\n"
+            "👇 _Выбери период:_"
         ),
         "vip_lifetime": (
-            "💎 *ТАРИФ ВИНЧИК FOREVER* 💎\n"
-            "_Заплати один раз — пользуйся всегда_\n\n"
-            "Включает в себя абсолютно **все возможности тарифа PRO** без ежемесячных платежей.\n\n"
-            "✅ Максимальный статус в боте навсегда!\n\n"
-            "👇 _Купить доступ навсегда:_"
+            "💎 *ТАРИФ FOREVER*\n"
+            "_Максимальный статус навсегда_\n\n"
+            "Получи **ВСЕ** привилегии тарифа PRO навсегда.\n"
+            "Никаких ежемесячных списаний. Оплати один раз — наслаждайся знакомствами без границ вечно.\n\n"
+            "👇 _Оформить доступ:_"
         ),
     }
     await call.message.edit_text(descs.get(tier, ""), reply_markup=KB.buy(tier), parse_mode=ParseMode.MARKDOWN)
@@ -2180,12 +2169,58 @@ async def tf(call: CallbackQuery):
 @rt.callback_query(F.data=="sh:boost")
 async def shboost(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
+    has = user.get("boost_count", 0) > 0
+    act = DB.is_boosted(user)
+    
+    st = f"\n🔥 Активен до: {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
+    if has: st += f"\n📦 В запасе: {user['boost_count']} шт."
+    if not has and not act: st = "\n❌ Сейчас у тебя нет Бустов."
+    
+    txt = (
+        "🚀 *ПРОФИЛЬ В ТОП-1*\n\n"
+        "Твоя анкета будет показываться первой в твоем городе целых 24 часа! "
+        "Это увеличивает количество просмотров и мэтчей **до 5 раз**.\n"
+        f"{st}"
+    )
+    
+    bk = InlineKeyboardMarkup(inline_keyboard=(
+        ([[InlineKeyboardButton(text="🚀 Активировать Буст", callback_data="bo:act")]] if has else []) + 
+        [
+            [InlineKeyboardButton(text="1 Буст — 39₽", callback_data="by:boost:1:3900")],
+            [InlineKeyboardButton(text="5 Бустов — 149₽ (🔥 Выгода)", callback_data="by:boost:5:14900")],
+            [InlineKeyboardButton(text="10 Бустов — 249₽ (💎 Супер-цена)", callback_data="by:boost:10:24900")],
+            [InlineKeyboardButton(text="🔙 В магазин", callback_data="sh:mn")]
+        ]
+    ))
+    await call.message.edit_text(txt, reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
+
+@rt.callback_query(F.data=="profile:boost")
+async def pboost(call: CallbackQuery, user: Optional[Dict]):
+    if not user: return
     has=user.get("boost_count",0)>0; act=DB.is_boosted(user)
-    st = f"\n🔥 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
-    if has: st+=f"\n🚀 {user['boost_count']}"
-    if not has and not act: st="\n❌ Нет"
-    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Актив", callback_data="bo:act")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="10×249₽", callback_data="by:boost:10:24900")],[InlineKeyboardButton(text="🔙", callback_data="sh:mn")]]))
-    await call.message.edit_text(f"🚀 *БУСТ* +500%{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    st = f"\n🔥 Активен до: {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
+    if has: st+=f"\n📦 В запасе: {user['boost_count']} шт."
+    if not has and not act: st="\n❌ Сейчас у тебя нет Бустов."
+    
+    bk=InlineKeyboardMarkup(inline_keyboard=(
+        ([[InlineKeyboardButton(text="🚀 Активировать", callback_data="bo:act:profile")]] if has else []) + 
+        [[InlineKeyboardButton(text="1 Буст — 39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5 Бустов — 149₽", callback_data="by:boost:5:14900")],
+         [InlineKeyboardButton(text="🔙 В профиль", callback_data="pv")]]
+    ))
+    try: await call.message.edit_caption(caption=f"🚀 *БУСТ ПРОФИЛЯ*\nТвоя анкета в ТОП-1 на 24 часа.{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    except: await call.message.edit_text(f"🚀 *БУСТ ПРОФИЛЯ*\nТвоя анкета в ТОП-1 на 24 часа.{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
+
+@rt.callback_query(F.data.startswith("bo:act"))
+async def act_boost(call: CallbackQuery, user: Optional[Dict]):
+    if not user or user.get("boost_count",0)<=0: return await call.answer("❌ У тебя нет бустов!", show_alert=True)
+    ok=await DB.use_boost(user["id"])
+    if ok:
+        u=await DB.get_user(call.from_user.id)
+        back="pv" if ":profile" in call.data else "sh:mn"
+        try: await call.message.edit_caption(caption=f"🚀 *Буст активирован!*\nТеперь ты в ТОПе до {u['boost_expires_at'].strftime('%d.%m %H:%M')}\nВ запасе: {u['boost_count']} шт.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]), parse_mode=ParseMode.MARKDOWN)
+        except: await call.message.edit_text(f"✅ Буст успешно активирован!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]))
     await call.answer()
 
 @rt.callback_query(F.data.startswith("by:"))
@@ -2195,20 +2230,20 @@ async def handle_buy(call: CallbackQuery, user: Optional[Dict]):
     prod,param,amt=parts[1],int(parts[2]),int(parts[3])
     res = await Pay.create(user, "boost", count=param, amount=amt) if prod=="boost" else await Pay.create(user, "subscription", tier=prod, dur=param, amount=amt)
     if "error" in res: return await call.answer(f"❌ {res['error']}", show_alert=True)
-    await call.message.edit_text(f"💳 *{amt//100}₽*\n1️⃣ Оплати  2️⃣ Проверь", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="💳 Оплатить", url=res["url"])],[InlineKeyboardButton(text="🔄 Проверить", callback_data=f"ck:{res['pid']}")],[InlineKeyboardButton(text="🔙", callback_data="sh:mn")]]), parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text(f"💳 *К оплате: {amt//100}₽*\n\n1️⃣ Нажми кнопку оплаты ниже\n2️⃣ Заверши платеж в системе ЮKassa\n3️⃣ Нажми «Проверить»", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="💳 Оплатить", url=res["url"])],[InlineKeyboardButton(text="🔄 Проверить оплату", callback_data=f"ck:{res['pid']}")],[InlineKeyboardButton(text="🔙 Отмена", callback_data="sh:mn")]]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data.startswith("ck:"))
 async def check_pay(call: CallbackQuery):
     res=await Pay.check(int(call.data[3:]))
     if res["status"]=="succeeded":
-        t="🎉 *Подписка!* " if res.get("type")!="boost" else f"🚀 *{res.get('count',1)} бустов!*"
+        t="🎉 *Оплата прошла успешно!*\nПодписка активирована. Наслаждайся!" if res.get("type")!="boost" else f"🚀 *Успешно!*\nНачислено: {res.get('count',1)} бустов."
         await call.message.edit_text(t, parse_mode=ParseMode.MARKDOWN)
-        await call.message.answer("🎉", reply_markup=KB.main())
+        await call.message.answer("🎉 Спасибо за покупку!", reply_markup=KB.main())
     elif res["status"]=="pending": 
-        await call.answer("⏳ ...", show_alert=True)
+        await call.answer("⏳ Платеж еще обрабатывается. Подожди пару минут и попробуй снова.", show_alert=True)
     else: 
-        await call.answer("❌", show_alert=True)
+        await call.answer("❌ Оплата не найдена или отменена.", show_alert=True)
     await call.answer()
 
 # ==========================================
@@ -2216,7 +2251,7 @@ async def check_pay(call: CallbackQuery):
 # ==========================================
 @rt.callback_query(F.data=="sh:promo")
 async def sh_promo(call: CallbackQuery, state: FSMContext): 
-    await call.message.edit_text("🎟 *Промокод:*", parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text("🎟 *Введи промокод:*\n_Напиши его в чат_", parse_mode=ParseMode.MARKDOWN)
     await state.update_data(pum=True)
     await state.set_state(AdminStates.promo_code)
     await call.answer()
@@ -2230,21 +2265,21 @@ async def promo_input(msg: Message, state: FSMContext, user: Optional[Dict]):
         if not user: return
         res=await DB.use_promo(user["id"],code)
         if "error" in res: 
-            await msg.answer(f"❌ {res['error']}", reply_markup=KB.main())
+            await msg.answer(f"❌ Ошибка: {res['error']}", reply_markup=KB.main())
         else: 
-            await msg.answer(f"🎉 *{TIER_NAMES.get(res['tier'],'VIP')}* {res['days']}дн! ", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
+            await msg.answer(f"🎉 Промокод сработал!\nАктивирован статус *{TIER_NAMES.get(res['tier'],'VIP')}* на {res['days']} дней! ", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
         return
         
     if not user or not DB.is_admin(user): return
     await state.update_data(pc_code=msg.text.strip().upper())
-    await msg.answer("Тариф:", reply_markup=KB.give_vip_tiers())
+    await msg.answer("Тариф для промокода:", reply_markup=KB.give_vip_tiers())
     await state.set_state(AdminStates.promo_tier)
 
 @rt.callback_query(AdminStates.promo_tier, F.data.startswith("gv:"))
 async def pt(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
     await state.update_data(pc_tier=call.data[3:])
-    await call.message.edit_text("Дней?")
+    await call.message.edit_text("На сколько дней даем подписку?")
     await state.set_state(AdminStates.promo_duration)
     await call.answer()
 
@@ -2252,39 +2287,26 @@ async def pt(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
 async def pd(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
     try: days=int(msg.text.strip())
-    except: return await msg.answer("❌")
+    except: return await msg.answer("❌ Введи число.")
     await state.update_data(pc_days=days)
-    await msg.answer("Лимит?")
+    await msg.answer("Лимит использований (кол-во активаций)?")
     await state.set_state(AdminStates.promo_uses)
 
 @rt.message(AdminStates.promo_uses)
 async def pu(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
     try: uses=int(msg.text.strip())
-    except: return await msg.answer("❌")
+    except: return await msg.answer("❌ Введи число.")
     d=await state.get_data()
     await DB.create_promo(d["pc_code"],d["pc_tier"],d["pc_days"],uses)
     await state.clear()
-    await msg.answer(f"✅ `{d['pc_code']}` {d['pc_days']}дн ×{uses}", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
-
-@rt.message(F.text=="❓ FAQ")
-async def faq(msg: Message):
-    await msg.answer(f"❓ *FAQ · {BOT_NAME}*\n\n"
-                     "❤️ Ставь ❤️ / 👎 — взаимно 👉 чат!\n"
-                     "⭐ Суперлайк = ×3 шанс мэтча\n"
-                     "💖 Совместимость по интересам\n"
-                     "🚀 Буст = топ 24ч\n"
-                     "🔄 Сброс = VIP\n"
-                     "🎁 Пробный = 3 дня VIP!\n"
-                     "⚡ Серия = награды каждый день!\n"
-                     "🏆 Достижения = бонусы!\n"
-                     "🧊 Айсбрейкер = не знаешь что написать", parse_mode=ParseMode.MARKDOWN)
+    await msg.answer(f"✅ Промокод создан!\n\nКод: `{d['pc_code']}`\nДней: {d['pc_days']}\nИспользований: {uses}", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data.startswith("rp:"))
 async def start_report(call: CallbackQuery, state: FSMContext):
     await state.update_data(rp_id=int(call.data[3:]))
-    try: await call.message.edit_caption(caption="🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
-    except: await call.message.edit_text("🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
+    try: await call.message.edit_caption(caption="🚩 *Выбери причину жалобы:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
+    except: await call.message.edit_text("🚩 *Выбери причину жалобы:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data.startswith("rr:"))
@@ -2294,8 +2316,8 @@ async def save_report(call: CallbackQuery, state: FSMContext, user: Optional[Dic
     rid=d.get("rp_id")
     if rid: await DB.create_report(user["id"], rid, call.data[3:])
     await state.clear()
-    try: await call.message.edit_caption(caption="✅ Отправлено!")
-    except: await call.message.edit_text("✅ Отправлено!")
+    try: await call.message.edit_caption(caption="✅ Жалоба отправлена модераторам. Спасибо!")
+    except: await call.message.edit_text("✅ Жалоба отправлена модераторам. Спасибо!")
     await next_card(call, state, user)
     await call.answer()
 
@@ -2315,30 +2337,35 @@ def is_adm(u): return u and u.get("telegram_id") in config.ADMIN_IDS
 @rt.message(Command("admin"))
 async def admin_cmd(msg: Message, user: Optional[Dict]):
     if not is_adm(user): return
-    await msg.answer(f"👑 *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
+    await msg.answer(f"👑 *Панель администратора*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="adm:main")
 async def adm_main(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     await state.clear()
-    await call.message.edit_text("👑 *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text("👑 *Панель администратора*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="adm:stats")
 async def adm_stats(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
     st=await DB.get_stats()
-    txt = (f"📊 *Статистика*\n\n👥 {st['total']}/{st['complete']} · DAU:{st['dau']} WAU:{st['wau']} MAU:{st['mau']}\n"
-           f"VIP:{st['vip']}({st['conversion']:.1f}%) Trial:{st['trials']} Бан:{st['banned']} +{st['today_reg']}\n"
-           f"❤️{st['likes']} 💕{st['matches']} 💬{st['messages']}\n"
-           f"💳 {st['revenue']:.0f}₽ мес:{st['month_revenue']:.0f}₽ 🚩{st['pending_reports']}")
+    txt = (f"📊 *Глобальная статистика*\n\n👥 Всего/Анкеты: {st['total']}/{st['complete']}\n"
+           f"📈 DAU: {st['dau']} | WAU: {st['wau']} | MAU: {st['mau']}\n"
+           f"👑 VIP: {st['vip']} (Конверсия: {st['conversion']:.1f}%)\n"
+           f"🎁 Пробные: {st['trials']}\n"
+           f"🚫 В бане: {st['banned']}\n"
+           f"🆕 Новых сегодня: +{st['today_reg']}\n\n"
+           f"❤️ Лайков: {st['likes']}\n💕 Мэтчей: {st['matches']}\n💬 Сообщений: {st['messages']}\n\n"
+           f"💳 Выручка: {st['revenue']:.0f}₽ (Месяц: {st['month_revenue']:.0f}₽)\n"
+           f"🚩 Открытых репортов: {st['pending_reports']}")
     await call.message.edit_text(txt, reply_markup=KB.back_admin(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="adm:search")
 async def adm_search(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await call.message.edit_text("🔍:")
+    await call.message.edit_text("🔍 Введи ID пользователя, username или Имя:")
     await state.set_state(AdminStates.search_user)
     await call.answer()
 
@@ -2347,9 +2374,9 @@ async def adm_search_result(msg: Message, state: FSMContext, user: Optional[Dict
     if not is_adm(user): return
     results=await DB.search_users(msg.text.strip())
     await state.clear()
-    if not results: return await msg.answer("❌", reply_markup=KB.back_admin())
+    if not results: return await msg.answer("❌ Никто не найден.", reply_markup=KB.back_admin())
     u=results[0]
-    await msg.answer(f"ID:`{u['id']}` @{u.get('username') or '-'}\n{DB.get_badge(u)}*{u['name']}*,{u['age']} {u['city']}\n{TIER_NAMES.get(u['subscription_tier'],'')} 👀{u['views_count']} ❤️{u['likes_received_count']}💕{u['matches_count']}", reply_markup=KB.admin_user(u["id"], u["is_banned"]), parse_mode=ParseMode.MARKDOWN)
+    await msg.answer(f"ID:`{u['id']}` @{u.get('username') or '-'}\n{DB.get_badge(u)}*{u['name']}*,{u['age']} {u['city']}\n{TIER_NAMES.get(u['subscription_tier'],'')}\n👀 Просмотры: {u['views_count']} ❤️Лайки: {u['likes_received_count']} 💕Мэтчи: {u['matches_count']}", reply_markup=KB.admin_user(u["id"], u["is_banned"]), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data.startswith("au:ban:"))
 async def adm_ban(call: CallbackQuery, user: Optional[Dict]):
@@ -2357,7 +2384,7 @@ async def adm_ban(call: CallbackQuery, user: Optional[Dict]):
     u=await DB.get_user_by_id(int(call.data.split(":")[2]))
     if u: 
         await DB.update_user(u["telegram_id"], is_banned=True)
-        await call.message.edit_text("🚫!", reply_markup=KB.back_admin())
+        await call.message.edit_text("🚫 Пользователь забанен!", reply_markup=KB.back_admin())
     await call.answer()
 
 @rt.callback_query(F.data.startswith("au:unban:"))
@@ -2366,7 +2393,7 @@ async def adm_unban(call: CallbackQuery, user: Optional[Dict]):
     u=await DB.get_user_by_id(int(call.data.split(":")[2]))
     if u: 
         await DB.update_user(u["telegram_id"], is_banned=False)
-        await call.message.edit_text("✅!", reply_markup=KB.back_admin())
+        await call.message.edit_text("✅ Пользователь разбанен!", reply_markup=KB.back_admin())
     await call.answer()
 
 @rt.callback_query(F.data.startswith("au:verify:"))
@@ -2375,14 +2402,14 @@ async def adm_verify(call: CallbackQuery, user: Optional[Dict]):
     u=await DB.get_user_by_id(int(call.data.split(":")[2]))
     if u: 
         await DB.update_user(u["telegram_id"], is_verified=True)
-        await call.message.edit_text("✅!", reply_markup=KB.back_admin())
+        await call.message.edit_text("✅ Пользователь верифицирован!", reply_markup=KB.back_admin())
     await call.answer()
 
 @rt.callback_query(F.data.startswith("au:givevip:"))
 async def adm_givevip(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     await state.update_data(target_uid=int(call.data.split(":")[2]))
-    await call.message.edit_text("Тариф:", reply_markup=KB.give_vip_tiers())
+    await call.message.edit_text("Какой тариф выдать?", reply_markup=KB.give_vip_tiers())
     await call.answer()
 
 @rt.callback_query(F.data.startswith("gv:"))
@@ -2393,10 +2420,10 @@ async def adm_gv(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
         d=await state.get_data()
         if d.get("target_uid"): await DB.activate_subscription_by_id(d["target_uid"], tier, 0)
         await state.clear()
-        await call.message.edit_text("✅", reply_markup=KB.back_admin())
+        await call.message.edit_text("✅ VIP навсегда выдан!", reply_markup=KB.back_admin())
     else:
         await state.update_data(give_tier=tier)
-        await call.message.edit_text("Дней?")
+        await call.message.edit_text("На сколько дней выдать?")
         await state.set_state(AdminStates.give_vip_duration)
     await call.answer()
 
@@ -2404,17 +2431,17 @@ async def adm_gv(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
 async def adm_gvd(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     try: days=int(msg.text.strip())
-    except: return await msg.answer("❌")
+    except: return await msg.answer("❌ Нужно число.")
     d=await state.get_data()
     await DB.activate_subscription_by_id(d["target_uid"],d["give_tier"],days)
     await state.clear()
-    await msg.answer(f"✅ {days}дн!", reply_markup=KB.main())
+    await msg.answer(f"✅ VIP выдан на {days} дней!", reply_markup=KB.main())
 
 @rt.callback_query(F.data.startswith("au:giveboost:"))
 async def adm_gb(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     await state.update_data(target_uid=int(call.data.split(":")[2]))
-    await call.message.edit_text("Сколько?")
+    await call.message.edit_text("Сколько бустов выдать?")
     await state.set_state(AdminStates.give_boost_count)
     await call.answer()
 
@@ -2422,26 +2449,26 @@ async def adm_gb(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
 async def adm_gbc(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     try: c=int(msg.text.strip())
-    except: return await msg.answer("❌")
+    except: return await msg.answer("❌ Нужно число.")
     d=await state.get_data()
     await DB.add_boosts(d["target_uid"],c)
     await state.clear()
-    await msg.answer(f"✅ {c}!", reply_markup=KB.main())
+    await msg.answer(f"✅ Выдано {c} бустов!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="adm:reports")
 async def adm_reports(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
     reps=await DB.get_pending_reports(5)
     if not reps: 
-        await call.message.edit_text("✅ Нет!", reply_markup=KB.back_admin())
+        await call.message.edit_text("✅ Новых репортов нет!", reply_markup=KB.back_admin())
         return await call.answer()
         
     rep=reps[0]
     rdn=rep["reported"]["name"] if rep["reported"] else "?"
     rid=rep["reported"]["id"] if rep["reported"] else 0
-    await call.message.edit_text(f"🚩 #{rep['id']}\n{rdn}(ID:{rid})\n{rep['reason']}\nВсего:{len(reps)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🚫 Бан", callback_data=f"ar:ban:{rep['id']}:{rid}"), InlineKeyboardButton(text="✅ Откл", callback_data=f"ar:dismiss:{rep['id']}:{rid}")],
-        [InlineKeyboardButton(text="⏭", callback_data="adm:reports")]
+    await call.message.edit_text(f"🚩 Репорт #{rep['id']}\nНа кого: {rdn} (ID:{rid})\nПричина: {rep['reason']}\nОсталось в очереди: {len(reps)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚫 Забанить", callback_data=f"ar:ban:{rep['id']}:{rid}"), InlineKeyboardButton(text="✅ Отклонить", callback_data=f"ar:dismiss:{rep['id']}:{rid}")],
+        [InlineKeyboardButton(text="⏭ Пропустить", callback_data="adm:reports")]
     ]), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
@@ -2454,16 +2481,16 @@ async def adm_report_action(call: CallbackQuery, user: Optional[Dict]):
         u=await DB.get_user_by_id(ruid)
         if u: await DB.update_user(u["telegram_id"], is_banned=True)
         await DB.resolve_report(rid,"banned")
-        await call.message.edit_text("🚫", reply_markup=KB.back_admin())
+        await call.message.edit_text("🚫 Нарушитель заблокирован.", reply_markup=KB.back_admin())
     elif action=="dismiss":
         await DB.resolve_report(rid,"dismissed")
-        await call.message.edit_text("✅", reply_markup=KB.back_admin())
+        await call.message.edit_text("✅ Репорт отклонен.", reply_markup=KB.back_admin())
     await call.answer()
 
 @rt.callback_query(F.data=="adm:broadcast")
 async def adm_bc(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await call.message.edit_text("📢 *Текст:*", parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text("📢 *Введи текст рассылки:*\n_Поддерживается Markdown разметка_", parse_mode=ParseMode.MARKDOWN)
     await state.set_state(AdminStates.broadcast_text)
     await call.answer()
 
@@ -2471,7 +2498,7 @@ async def adm_bc(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
 async def adm_bct(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
     await state.update_data(bc_text=msg.text)
-    await msg.answer("Кому?", reply_markup=KB.broadcast_targets())
+    await msg.answer("Кому отправляем?", reply_markup=KB.broadcast_targets())
     await state.set_state(AdminStates.broadcast_confirm)
 
 @rt.callback_query(AdminStates.broadcast_confirm, F.data.startswith("bc:"))
@@ -2484,7 +2511,7 @@ async def adm_bcs(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
         tgt=d.get("bc_target","all")
         ids=await DB.get_all_user_ids(tgt)
         await state.clear()
-        await call.message.edit_text(f"🚀 {len(ids)}...")
+        await call.message.edit_text(f"🚀 Запуск рассылки для {len(ids)} пользователей...")
         sent=failed=0
         for tid in ids:
             try: 
@@ -2494,18 +2521,18 @@ async def adm_bcs(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
                 failed+=1
             if sent%25==0: await asyncio.sleep(1)
         await DB.log_broadcast(user["telegram_id"], txt, tgt, sent, failed)
-        await call.message.answer(f"✅ {sent} ❌ {failed}", reply_markup=KB.back_admin())
+        await call.message.answer(f"✅ Рассылка завершена!\nУспешно: {sent}\nОшибок: {failed}", reply_markup=KB.back_admin())
     else:
         await state.update_data(bc_target=target)
         d=await state.get_data()
         ids=await DB.get_all_user_ids(target)
-        await call.message.edit_text(f"📢 {d['bc_text'][:100]}...\n\n{target} · {len(ids)}", reply_markup=KB.broadcast_confirm())
+        await call.message.edit_text(f"📢 *Предпросмотр:*\n\n{d['bc_text'][:100]}...\n\nАудитория: {target} (примерно {len(ids)} чел.)\nНачинаем?", reply_markup=KB.broadcast_confirm(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="adm:promo")
 async def adm_promo(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await call.message.edit_text("🎟 Код:")
+    await call.message.edit_text("🎟 Введи название для нового промокода:")
     await state.update_data(pum=False)
     await state.set_state(AdminStates.promo_code)
     await call.answer()
@@ -2543,22 +2570,20 @@ async def evening_boost_suggestions(bot: Bot):
                 for u in users.scalars().all():
                     if not u.boost_expires_at or u.boost_expires_at < datetime.utcnow():
                         try:
-                            await bot.send_message(u.telegram_id, "🚀 *Вечер — лучшее время для буста!*\n+500% просмотров за 39₽",
-                                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Буст 39₽", callback_data="by:boost:1:3900")]]),
+                            await bot.send_message(u.telegram_id, "🚀 *Вечер — лучшее время для буста!*\nПолучи в 5 раз больше просмотров и мэтчей всего за 39₽!",
+                                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Купить Буст", callback_data="by:boost:1:3900")]]),
                                                    parse_mode=ParseMode.MARKDOWN)
                         except: pass
                         await asyncio.sleep(0.5)
         except Exception as e: logger.error(f"Boost suggest err: {e}")
 
 async def streak_reminders(bot: Bot):
-    """Напоминание о серии вечером"""
     while True:
         now = datetime.utcnow(); target = now.replace(hour=18, minute=0, second=0)
         if now > target: target += timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
         try:
             async with async_session_maker() as s:
-                # Пользователи с серией, не заходившие сегодня
                 users = await s.execute(select(User).where(and_(
                     User.is_active == True, User.is_banned == False,
                     User.streak_days > 2,
@@ -2570,7 +2595,7 @@ async def streak_reminders(bot: Bot):
                         day = ((u.streak_days) % 7) + 1
                         reward = Gamification.DAILY_REWARDS.get(day, {})
                         await bot.send_message(u.telegram_id,
-                                               f"⚡ *Не потеряй серию {u.streak_days} дней!*\n\nЗайди сегодня и получи: {reward.get('text', '')}\n\n_Серия обнулится если пропустишь день!_",
+                                               f"⚡ *Не потеряй свою серию из {u.streak_days} дней!*\n\nЗайди в бота сегодня и забери награду: {reward.get('text', '')}\n\n_Если не зайти сегодня, серия обнулится!_",
                                                parse_mode=ParseMode.MARKDOWN)
                     except: pass
                     await asyncio.sleep(0.5)
