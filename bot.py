@@ -1,5 +1,5 @@
 """
-ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v3.2 (FULLY FIXED)
+ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v3.3 (FULLY FIXED)
 https://github.com/yourname/dating-bot
 
 Запуск:
@@ -1031,7 +1031,7 @@ class T:
     PAY_PENDING = "⏳ Нажми «Оплатить» для перехода:"
 
     SHOP = f"""
-🛍️ *Магазин {BOT_NAME}*
+🛍️ *{BOT_NAME}* — Магазин
 
 ✨ *VIP-подписки* — все возможности
 🚀 *Буст анкеты* — в топ выдачи
@@ -1068,21 +1068,41 @@ class T:
 📊 *СРАВНЕНИЕ ТАРИФОВ*
 
 💬 *Бесплатный*
-30 лайков · 10 сообщений · 3 гостя
+• 30 лайков/день
+• 10 сообщений/день
+• 3 гостя/день
+• Базовые фильтры
 
-✨ *VIP Light*
-100 лайков · ∞ сообщений · 10 гостей · Без рекламы
+✨ *VIP Light (199₽/мес)*
+• 100 лайков/день (+3x)
+• ∞ сообщений
+• 10 гостей/день
+• Без рекламы
+• Приоритет в выдаче
 
-⭐ *VIP Standard*
-∞ лайков · ∞ сообщений · Все гости
-Приоритет · Невидимка · 1 буст/день
+⭐ *VIP Standard (499₽/мес)*
+• ∞ лайков
+• ∞ сообщений
+• Все гости
+• Невидимка (скрытое лайкание)
+• 1 буст/день
+• Фильтры по интересам
+• Приоритет +50%
 
-👑 *VIP Pro*
-Всё из Standard + 3 буста · Суперлайки
-VIP-бейдж · Приоритетная поддержка
+👑 *VIP Pro (899₽/мес)*
+• Всё из Standard +
+• 3 буста/день
+• 5 суперлайков/день
+• VIP-бейдж 👑
+• Эксклюзивные подарки
+• 24/7 Приоритетная поддержка
+• В топе выдачи
 
-💎 *VIP Lifetime*
-Всё из Pro НАВСЕГДА + бейдж Основатель
+💎 *VIP Lifetime (4999₽)*
+• Всё из Pro НАВСЕГДА
+• Бейдж Основателя 💎
+• Все будущие обновления
+• Приватный чат с командой
 """
 
     LIGHT = """
@@ -1090,52 +1110,80 @@ VIP-бейдж · Приоритетная поддержка
 
 👁️ 100 лайков/день (×3 от бесплатного)
 💬 Безлимитные сообщения
-👥 10 гостей · Без рекламы
+👥 10 гостей/день
+🚫 Без рекламы
+⭐ Приоритет в выдаче
 
-_Для тех, кому не хватает лайков_
+_Лучший выбор для новичков_
 
-• 299₽/неделя (43₽/день)
-• 799₽/месяц (27₽/день) 
+📍 Тариф доступен:
+• 199₽/месяц (6.6₽/день)
+• 499₽/3 месяца (5.5₽/день) — *экономия 25%*
+• 899₽/6 месяцев (5₽/день) — *экономия 36%*
 """
 
     STANDARD = """
-⭐ *VIP STANDARD* — Популярный
+⭐ *VIP STANDARD* — Самый популярный
 
 ❤️ Безлимитные лайки и сообщения
-👥 Все гости · Приоритет в выдаче
-👻 Невидимка · 🚀 1 буст/день
+👥 Все гости (без лимита)
+👻 Невидимка (скрытое лайкание)
+🚀 1 буст/день (топ на 24ч)
+⭐ Приоритет в выдаче +50%
+🔍 Расширенные фильтры
+🎯 Поиск по интересам
 
 _×3 мэтчей по сравнению с бесплатным_
 
-• 499₽/месяц (17₽/день)
-• 1199₽/3 мес (13₽/день) — *скидка 20%*
+📍 Стоимость:
+• 499₽/месяц (16.6₽/день)
+• 1199₽/3 месяца (13.3₽/день) — *скидка 20%* ⭐
+• 1999₽/6 месяцев (11.1₽/день) — *скидка 33%*
 """
 
     PRO = """
-👑 *VIP PRO* — Максимум
+👑 *VIP PRO* — Максимум возможностей
 
-Всё из Standard
-🚀 3 буста/день · ⭐ 5 суперлайков/день
-VIP-бейдж · Эксклюзивные подарки
-24/7 Приоритетная поддержка
+Всё из VIP Standard +
+
+🚀 3 буста/день (топ выдачи)
+⭐ 5 суперлайков/день (выделены)
+👑 VIP-бейдж (видно всем)
+🎁 Эксклюзивные подарки
+🏆 В топе выдачи всегда
+💬 24/7 Приоритетная поддержка
+🎭 Функция "Суперлайк" (выделенный лайк)
 
 _×5 мэтчей по сравнению с бесплатным_
 
-• 799₽/мес · 1999₽/3мес (-17%)
-• 3499₽/6мес (-27%)
+📍 Стоимость:
+• 899₽/месяц (30₽/день)
+• 2299₽/3 месяца (25.4₽/день) — *скидка 15%*
+• 3999₽/6 месяцев (22.2₽/день) — *скидка 33%*
 """
 
     LIFETIME = """
 💎 *VIP LIFETIME* — Навсегда
 
-Всё из VIP Pro навсегда
-👑 Бейдж «Основатель» 
-Все будущие обновления бесплатно
+Всё из VIP Pro НАВСЕГДА +
 
-Pro на год = 9588₽
-Lifetime = 9999₽ — окупается за 12.5 мес
+💎 Бейдж "Основателя" (уникальный)
+🎁 Все будущие обновления бесплатно
+💬 Личный чат с командой разработчиков
+🏅 Приоритет поддержки
+🎊 Эксклюзивные события
 
-*9999₽ один раз*
+*Один платёж — вечный доступ*
+
+💰 Сравнение цен:
+• VIP Pro на 6 месяцев = 3999₽
+• VIP Pro на год = 7998₽
+• VIP Lifetime = 4999₽
+
+✅ *Окупается менее чем за год!*
+✅ Потом навсегда бесплатно!
+
+*4999₽ — один раз на всю жизнь*
 """
 
     ADMIN_MAIN = """
@@ -1306,8 +1354,9 @@ class KB:
     def buy_light():
         return InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="💳 299₽ / неделя", callback_data="by:vip_light:7:29900")],
-                [InlineKeyboardButton(text="💳 799₽ / месяц", callback_data="by:vip_light:30:79900")],
+                [InlineKeyboardButton(text="💳 199₽ / месяц", callback_data="by:vip_light:30:19900")],
+                [InlineKeyboardButton(text="💳 499₽ / 3 месяца (-25%)", callback_data="by:vip_light:90:49900")],
+                [InlineKeyboardButton(text="💳 899₽ / 6 месяцев (-36%)", callback_data="by:vip_light:180:89900")],
                 [InlineKeyboardButton(text="◀️ Назад", callback_data="sh:subs")]
             ]
         )
@@ -1317,7 +1366,8 @@ class KB:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="💳 499₽ / месяц", callback_data="by:vip_standard:30:49900")],
-                [InlineKeyboardButton(text="💳 1199₽ / 3 мес -20%", callback_data="by:vip_standard:90:119900")],
+                [InlineKeyboardButton(text="💳 1199₽ / 3 месяца (-20%)", callback_data="by:vip_standard:90:119900")],
+                [InlineKeyboardButton(text="💳 1999₽ / 6 месяцев (-33%)", callback_data="by:vip_standard:180:199900")],
                 [InlineKeyboardButton(text="◀️ Назад", callback_data="sh:subs")]
             ]
         )
@@ -1326,9 +1376,9 @@ class KB:
     def buy_pro():
         return InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="💳 799₽ / мес", callback_data="by:vip_pro:30:79900")],
-                [InlineKeyboardButton(text="💳 1999₽ / 3 мес -17%", callback_data="by:vip_pro:90:199900")],
-                [InlineKeyboardButton(text="💳 3499₽ / 6 мес -27%", callback_data="by:vip_pro:180:349900")],
+                [InlineKeyboardButton(text="💳 899₽ / месяц", callback_data="by:vip_pro:30:89900")],
+                [InlineKeyboardButton(text="💳 2299₽ / 3 месяца (-15%)", callback_data="by:vip_pro:90:229900")],
+                [InlineKeyboardButton(text="💳 3999₽ / 6 месяцев (-33%)", callback_data="by:vip_pro:180:399900")],
                 [InlineKeyboardButton(text="◀️ Назад", callback_data="sh:subs")]
             ]
         )
@@ -1337,7 +1387,7 @@ class KB:
     def buy_lifetime():
         return InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="💳 9999₽ навсегда", callback_data="by:vip_lifetime:0:999900")],
+                [InlineKeyboardButton(text="💳 4999₽ навсегда", callback_data="by:vip_lifetime:0:499900")],
                 [InlineKeyboardButton(text="◀️ Назад", callback_data="sh:subs")]
             ]
         )
@@ -1348,9 +1398,9 @@ class KB:
         if has:
             b.append([InlineKeyboardButton(text="🚀 Активировать буст", callback_data="bo:act")])
         b += [
-            [InlineKeyboardButton(text="💳 1шт — 99₽", callback_data="by:boost:1:9900")],
-            [InlineKeyboardButton(text="💳 5шт — 399₽ (-20%)", callback_data="by:boost:5:39900")],
-            [InlineKeyboardButton(text="💳 10шт — 699₽ (-30%)", callback_data="by:boost:10:69900")],
+            [InlineKeyboardButton(text="💳 1шт — 49₽", callback_data="by:boost:1:4900")],
+            [InlineKeyboardButton(text="💳 5шт — 199₽ (-18%)", callback_data="by:boost:5:19900")],
+            [InlineKeyboardButton(text="💳 10шт — 349₽ (-29%)", callback_data="by:boost:10:34900")],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="sh:mn")]
         ]
         return InlineKeyboardMarkup(inline_keyboard=b)
@@ -1506,7 +1556,7 @@ class KB:
         )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ANTI-SPAM & CACHE
+# ANTI-SPAM
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AntiSpam:
@@ -1514,7 +1564,6 @@ class AntiSpam:
         self.users: Dict[str, List[float]] = {}
 
     async def check(self, user_id: int, action: str, limit: int = 5, time_window: int = 60) -> bool:
-        """Check spam (5 actions per 60 sec)"""
         now = time.time()
         key = f"{user_id}:{action}"
 
@@ -1743,7 +1792,7 @@ async def reg_looking(callback: CallbackQuery, state: FSMContext):
     await DB.update_user(callback.from_user.id, **upd)
     await state.clear()
     await callback.message.edit_text(T.REG_DONE, parse_mode=ParseMode.MARKDOWN)
-    await callback.message.answer("", reply_markup=KB.main())
+    await callback.message.answer("👋 Выбери действие:", reply_markup=KB.main())
     await callback.answer()
 
 # ══════════════════════ BROWSE ══════════════════════
@@ -2025,17 +2074,19 @@ async def show_profile(message: Message, user: Optional[Dict]):
 
     bi = ""
     if DB.is_boosted(user):
-        bi += f"\n🚀 Буст до {user['boost_expires_at'].strftime('%d.%m %H:%M')}"
+        bi += f"\n🚀 Буст активен до {user['boost_expires_at'].strftime('%d.%m %H:%M')}"
     if user.get("boost_count", 0) > 0:
-        bi += f"\n📦 Запас: {user['boost_count']}"
+        bi += f"\n📦 Запас бустов: {user['boost_count']}"
 
     txt = (
         f"👤 *Мой профиль*\n\n"
         f"{badge}*{user['name']}*, {user['age']}{role}\n"
         f"🌍 {user['city']}\n\n"
         f"{user['bio'] or '_Не указано_'}\n\n"
-        f"👁️ {user['views_count']} · ❤️ {user['likes_received_count']} · 💘 {user['matches_count']}\n"
-        f"{sub}{bi}"
+        f"👁️ {user['views_count']} просмотров\n"
+        f"❤️ {user['likes_received_count']} лайков\n"
+        f"💘 {user['matches_count']} мэтчей\n\n"
+        f"Статус: {sub}{bi}"
     )
 
     if user.get("main_photo"):
@@ -2056,13 +2107,13 @@ async def show_profile(message: Message, user: Optional[Dict]):
 async def profile_edit_menu(callback: CallbackQuery):
     try:
         await callback.message.edit_caption(
-            caption="✏️ *Редактировать:*",
+            caption="✏️ *Редактировать профиль:*",
             reply_markup=KB.edit(),
             parse_mode=ParseMode.MARKDOWN,
         )
     except:
         await callback.message.edit_text(
-            "✏️ *Редактировать:*",
+            "✏️ *Редактировать профиль:*",
             reply_markup=KB.edit(),
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -2485,17 +2536,19 @@ async def back_to_profile(callback: CallbackQuery, user: Optional[Dict]):
 
     bi = ""
     if DB.is_boosted(user):
-        bi += f"\n🚀 Буст до {user['boost_expires_at'].strftime('%d.%m %H:%M')}"
+        bi += f"\n🚀 Буст активен до {user['boost_expires_at'].strftime('%d.%m %H:%M')}"
     if user.get("boost_count", 0) > 0:
-        bi += f"\n📦 Запас: {user['boost_count']}"
+        bi += f"\n📦 Запас бустов: {user['boost_count']}"
 
     txt = (
         f"👤 *Мой профиль*\n\n"
         f"{badge}*{user['name']}*, {user['age']}{role}\n"
         f"🌍 {user['city']}\n\n"
         f"{user['bio'] or '_Не указано_'}\n\n"
-        f"👁️ {user['views_count']} · ❤️ {user['likes_received_count']} · 💘 {user['matches_count']}\n"
-        f"{sub}{bi}"
+        f"👁️ {user['views_count']} просмотров\n"
+        f"❤️ {user['likes_received_count']} лайков\n"
+        f"💘 {user['matches_count']} мэтчей\n\n"
+        f"Статус: {sub}{bi}"
     )
 
     try:
@@ -2626,7 +2679,7 @@ async def admin_ban(callback: CallbackQuery, user: Optional[Dict]):
             parse_mode=ParseMode.MARKDOWN,
         )
         try:
-            await callback.bot.send_message(u["telegram_id"], T.BANNED)
+            await callback.bot.send_message(u["telegram_id"], "Ваш аккаунт заблокирован администратором.")
         except:
             pass
 
@@ -3008,27 +3061,19 @@ async def admin_bc_target(callback: CallbackQuery, state: FSMContext, user: Opti
 
     await callback.answer()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════════
 # MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════════
 
 async def main():
     await init_db()
-
-    bot = Bot(token=config.BOT_TOKEN)
-
+    bot = Bot(token=confg.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
     dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(rt)
     dp.message.middleware(UserMiddleware())
     dp.callback_query.middleware(UserMiddleware())
-    dp.include_router(rt)
-
-    logger.info(f"🚀 {BOT_NAME} starting...")
-
-    try:
-        await bot.delete_webhook(drop_pending_updates=True)
-        await dp.start_polling(bot)
-    finally:
-        await bot.session.close()
+    logger.info(f"🚀 {BOT_NAME} запущен")
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 if __name__ == "__main__":
     asyncio.run(main())
