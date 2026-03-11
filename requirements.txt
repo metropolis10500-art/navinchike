@@ -1,4 +1,4 @@
-aiogram==3.3.0
+aiogram==3.7.0
 aiosqlite==0.19.0
 sqlalchemy==2.0.23
 yookassa==3.3.0
