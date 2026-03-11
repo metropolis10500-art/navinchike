@@ -1,19 +1,10 @@
 """
-ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v3.1 (REFACTORED)
+ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v3.2 (FULLY FIXED)
 https://github.com/yourname/dating-bot
 
 Запуск:
- pip install aiogram aiosqlite sqlalchemy yookassa python-dotenv
+ pip install aiogram==3.7.0 aiosqlite sqlalchemy yookassa python-dotenv
  python bot.py
-
-.env файл:
- TELEGRAM_BOT_TOKEN=YOUR_TOKEN
- DATABASE_URL=sqlite+aiosqlite:///dating_bot.db
- YOOKASSA_SHOP_ID=your_shop_id
- YOOKASSA_SECRET_KEY=your_secret_key
- DOMAIN=https://yourdomain.ru
- ADMIN_IDS=123456789,987654321
- CREATOR_IDS=123456789
 """
 
 import asyncio
@@ -37,7 +28,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.enums import ParseMode
-from aiogram.client.default import DefaultBotProperties
 
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Boolean, DateTime,
@@ -486,7 +476,6 @@ class DB:
             is_match = rev.scalar_one_or_none() is not None
             
             if is_match:
-                # Check if match already exists
                 existing = await s.execute(
                     select(Match).where(
                         or_(
@@ -627,7 +616,7 @@ class DB:
     async def dec_likes(tg_id: int):
         u = await DB.get_user(tg_id)
         if u and DB.is_vip(u):
-            return  # VIP not spending likes
+            return
         async with async_session_maker() as s:
             await s.execute(
                 update(User).where(User.telegram_id == tg_id).values(
@@ -754,8 +743,8 @@ class DB:
                 "matches": total_matches,
                 "messages": total_msgs,
                 "likes": total_likes,
-                "revenue": revenue / 100,
-                "month_revenue": month_rev / 100,
+                "revenue": revenue / 100 if revenue else 0,
+                "month_revenue": month_rev / 100 if month_rev else 0,
                 "pending_reports": pending_reports,
                 "conversion": (vip / complete * 100) if complete > 0 else 0,
             }
@@ -1532,11 +1521,10 @@ class AntiSpam:
         if key not in self.users:
             self.users[key] = []
 
-        # Remove old events
         self.users[key] = [t for t in self.users[key] if (now - t) < time_window]
 
         if len(self.users[key]) >= limit:
-            return False  # SPAM!
+            return False
 
         self.users[key].append(now)
         return True
@@ -2046,7 +2034,7 @@ async def show_profile(message: Message, user: Optional[Dict]):
         f"{badge}*{user['name']}*, {user['age']}{role}\n"
         f"🌍 {user['city']}\n\n"
         f"{user['bio'] or '_Не указано_'}\n\n"
-        f"👁️ 👁️ {user['views_count']} · ❤️ {user['likes_received_count']} · 💘 {user['matches_count']}\n"
+        f"👁️ {user['views_count']} · ❤️ {user['likes_received_count']} · 💘 {user['matches_count']}\n"
         f"{sub}{bi}"
     )
 
@@ -2153,7 +2141,6 @@ async def save_photo(message: Message, state: FSMContext, user: Optional[Dict]):
     pid = message.photo[-1].file_id
     existing_photos = user.get("photos", "").strip()
 
-    # Max 5 photos
     photos_list = [p for p in existing_photos.split(",") if p.strip()]
     if len(photos_list) >= 5:
         await message.answer("⚠️ Максимум 5 фото!", reply_markup=KB.main())
@@ -2348,7 +2335,6 @@ async def promo_input(callback: CallbackQuery, state: FSMContext):
 async def promo_code_input(message: Message, state: FSMContext, user: Optional[Dict]):
     d = await state.get_data()
 
-    # USER MODE
     if d.get("promo_user_mode"):
         code = message.text.strip().upper()
         await state.clear()
@@ -2371,7 +2357,6 @@ async def promo_code_input(message: Message, state: FSMContext, user: Optional[D
             )
         return
 
-    # ADMIN MODE
     if not DB.is_admin(user):
         return
 
@@ -3030,10 +3015,7 @@ async def admin_bc_target(callback: CallbackQuery, state: FSMContext, user: Opti
 async def main():
     await init_db()
 
-    bot = Bot(
-        token=config.BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
+    bot = Bot(token=config.BOT_TOKEN)
 
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(UserMiddleware())
