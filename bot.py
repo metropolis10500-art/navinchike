@@ -28,6 +28,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Boolean, DateTime,
@@ -112,7 +113,7 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
     username = Column(String(255), nullable=True)
@@ -147,7 +148,7 @@ class User(Base):
 
 class Like(Base):
     __tablename__ = "likes"
-    
+
     id = Column(Integer, primary_key=True)
     from_user_id = Column(Integer, ForeignKey("users.id"))
     to_user_id = Column(Integer, ForeignKey("users.id"))
@@ -156,7 +157,7 @@ class Like(Base):
 
 class Match(Base):
     __tablename__ = "matches"
-    
+
     id = Column(Integer, primary_key=True)
     user1_id = Column(Integer, ForeignKey("users.id"))
     user2_id = Column(Integer, ForeignKey("users.id"))
@@ -166,7 +167,7 @@ class Match(Base):
 
 class ChatMessage(Base):
     __tablename__ = "messages"
-    
+
     id = Column(Integer, primary_key=True)
     match_id = Column(Integer, ForeignKey("matches.id"))
     sender_id = Column(Integer, ForeignKey("users.id"))
@@ -176,7 +177,7 @@ class ChatMessage(Base):
 
 class GuestVisit(Base):
     __tablename__ = "guest_visits"
-    
+
     id = Column(Integer, primary_key=True)
     visitor_id = Column(Integer, ForeignKey("users.id"))
     visited_user_id = Column(Integer, ForeignKey("users.id"))
@@ -184,7 +185,7 @@ class GuestVisit(Base):
 
 class Payment(Base):
     __tablename__ = "payments"
-    
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     yookassa_payment_id = Column(String(100), unique=True)
@@ -201,7 +202,7 @@ class Payment(Base):
 
 class Report(Base):
     __tablename__ = "reports"
-    
+
     id = Column(Integer, primary_key=True)
     reporter_id = Column(Integer, ForeignKey("users.id"))
     reported_user_id = Column(Integer, ForeignKey("users.id"))
@@ -213,7 +214,7 @@ class Report(Base):
 
 class PromoCode(Base):
     __tablename__ = "promo_codes"
-    
+
     id = Column(Integer, primary_key=True)
     code = Column(String(50), unique=True)
     tier = Column(String(50))
@@ -225,7 +226,7 @@ class PromoCode(Base):
 
 class PromoUse(Base):
     __tablename__ = "promo_uses"
-    
+
     id = Column(Integer, primary_key=True)
     promo_id = Column(Integer, ForeignKey("promo_codes.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -233,7 +234,7 @@ class PromoUse(Base):
 
 class BroadcastLog(Base):
     __tablename__ = "broadcast_logs"
-    
+
     id = Column(Integer, primary_key=True)
     admin_id = Column(Integer)
     message_text = Column(Text)
@@ -422,7 +423,7 @@ class DB:
                 select(Like.to_user_id).where(Like.from_user_id == u["id"])
             )
             exc = [r[0] for r in liked.fetchall()] + [u["id"]]
-            
+
             q = select(User).where(
                 and_(
                     User.is_active == True,
@@ -434,18 +435,18 @@ class DB:
                     User.age <= u["age_to"]
                 )
             )
-            
+
             lf = u.get("looking_for", "both")
             if lf == "male":
                 q = q.where(User.gender == Gender.MALE)
             elif lf == "female":
                 q = q.where(User.gender == Gender.FEMALE)
-            
+
             q = q.order_by(
                 User.boost_expires_at.desc().nullslast(),
                 User.last_active_at.desc()
             ).limit(limit)
-            
+
             r = await s.execute(q)
             return [DB._to_dict(x) for x in r.scalars().all()]
 
@@ -460,21 +461,21 @@ class DB:
             )
             if ex.scalar_one_or_none():
                 return False
-            
+
             s.add(Like(from_user_id=fd, to_user_id=tid))
             await s.execute(
                 update(User).where(User.id == tid).values(
                     likes_received_count=User.likes_received_count + 1
                 )
             )
-            
+
             rev = await s.execute(
                 select(Like).where(
                     and_(Like.from_user_id == tid, Like.to_user_id == fd)
                 )
             )
             is_match = rev.scalar_one_or_none() is not None
-            
+
             if is_match:
                 existing = await s.execute(
                     select(Match).where(
@@ -491,7 +492,7 @@ class DB:
                             matches_count=User.matches_count + 1
                         )
                     )
-            
+
             await s.commit()
             return is_match
 
@@ -730,7 +731,7 @@ class DB:
                     select(func.count(Report.id)).where(Report.status == "pending")
                 )
             ).scalar() or 0
-            
+
             return {
                 "total": total,
                 "complete": complete,
@@ -870,7 +871,7 @@ class DB:
                 return {"error": "Промокод не найден"}
             if promo.used_count >= promo.max_uses:
                 return {"error": "Промокод исчерпан"}
-            
+
             used = await s.execute(
                 select(PromoUse).where(
                     and_(PromoUse.promo_id == promo.id, PromoUse.user_id == user_id)
@@ -878,7 +879,7 @@ class DB:
             )
             if used.scalar_one_or_none():
                 return {"error": "Ты уже использовал этот промокод"}
-            
+
             s.add(PromoUse(promo_id=promo.id, user_id=user_id))
             await s.execute(
                 update(PromoCode).where(PromoCode.id == promo.id).values(
@@ -896,17 +897,17 @@ class DB:
             u = ur.scalar_one_or_none()
             if not u:
                 return
-            
+
             te = SubscriptionTier(tier)
             now = datetime.utcnow()
-            
+
             if te == SubscriptionTier.VIP_LIFETIME:
                 exp = None
             elif u.subscription_expires_at and u.subscription_expires_at > now:
                 exp = u.subscription_expires_at + timedelta(days=days)
             else:
                 exp = now + timedelta(days=days)
-            
+
             await s.execute(
                 update(User).where(User.id == uid).values(
                     subscription_tier=te,
@@ -2362,7 +2363,7 @@ async def check_payment(callback: CallbackQuery):
                 "✅ *Подписка активирована!*",
                 parse_mode=ParseMode.MARKDOWN,
             )
-        await callback.message.answer("", reply_markup=KB.main())
+        await callback.message.answer("👋", reply_markup=KB.main())
     elif res["status"] == "pending":
         await callback.answer("⏳ Обрабатывается...", show_alert=True)
     else:
@@ -2519,7 +2520,7 @@ async def back_to_menu(callback: CallbackQuery, state: FSMContext):
         await callback.message.delete()
     except:
         pass
-    await callback.message.answer("", reply_markup=KB.main())
+    await callback.message.answer("👋", reply_markup=KB.main())
     await callback.answer()
 
 @rt.callback_query(F.data == "pv")
@@ -3061,13 +3062,26 @@ async def admin_bc_target(callback: CallbackQuery, state: FSMContext, user: Opti
 
     await callback.answer()
 
+@rt.callback_query(F.data == "adm:promo")
+async def admin_promo_start(callback: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    if not is_adm(user):
+        return
+
+    await callback.message.edit_text(
+        "🎁 *Введи код промокода:*",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    await state.update_data(promo_user_mode=False)
+    await state.set_state(AdminStates.promo_code)
+    await callback.answer()
+
 # ═════════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═════════════════════════════════════════════════════════════════════════════════
 
 async def main():
     await init_db()
-    bot = Bot(token=confg.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
+    bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(rt)
     dp.message.middleware(UserMiddleware())
