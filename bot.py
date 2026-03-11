@@ -1147,7 +1147,7 @@ class KB:
     def no_profiles(vip=False):
         b = [[InlineKeyboardButton(text="🌍 Другие города", callback_data="sr:expand")]]
         b.append([InlineKeyboardButton(text="🔄 Сброс" + (" (VIP)" if not vip else ""), callback_data="sr:reset" if vip else "sr:reset_locked")])
-        b += [[InlineKeyboardButton(text="🔄 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="🔙", callback_data="mn")]]
+        b += [[InlineKeyboardButton(text="🔄 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="🔙 Меню", callback_data="mn")]]
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
@@ -1294,7 +1294,7 @@ def card_text(p, v):
             f"💖 *{compat:.0f}%*")
 
 # ==========================================
-# HANDLERS — START
+# HANDLERS — СТАРТ И КРАСИВАЯ РЕГИСТРАЦИЯ
 # ==========================================
 @rt.message(CommandStart())
 async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
@@ -1333,74 +1333,91 @@ async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
         if not user:
             user = await DB.create_user(msg.from_user.id, msg.from_user.username)
         if ref_code: await DB.process_referral(user["id"], ref_code)
-        await msg.answer(f"🍷 *Добро пожаловать в {BOT_NAME}!*\n\nСоздадим анкету 👇", parse_mode=ParseMode.MARKDOWN)
-        await msg.answer("📝 Как тебя зовут?", reply_markup=ReplyKeyboardRemove())
+        
+        welcome_text = (
+            f"🍷 *Добро пожаловать в {BOT_NAME}!*\n\n"
+            "Здесь встречаются классные люди, завязываются интересные диалоги и случаются настоящие мэтчи. 💕\n\n"
+            "Давай создадим твою анкету, чтобы другие могли тебя найти!\n\n"
+            "📝 *Для начала, как к тебе обращаться?*"
+        )
+        await msg.answer(welcome_text, parse_mode=ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegStates.name)
 
-# ==========================================
-# REGISTRATION
-# ==========================================
 @rt.message(RegStates.name)
 async def rn(msg: Message, state: FSMContext):
-    n=msg.text.strip()
-    if len(n)<2 or len(n)>50:
-        await msg.answer("❌ 2-50")
+    n = msg.text.strip()
+    if len(n) < 2 or len(n) > 50:
+        await msg.answer("❌ Имя должно быть от 2 до 50 символов. Попробуй еще раз:")
     else:
         await state.update_data(name=n)
-        await msg.answer("🎂 Возраст? _(18-99)_", parse_mode=ParseMode.MARKDOWN)
+        await msg.answer(f"Приятно познакомиться, *{n}*! ✨\n\n🎂 *Сколько тебе лет?*\n_Укажи цифрами, например: 21_", parse_mode=ParseMode.MARKDOWN)
         await state.set_state(RegStates.age)
 
 @rt.message(RegStates.age)
 async def ra(msg: Message, state: FSMContext):
     try:
-        a=int(msg.text.strip()); assert 18<=a<=99
+        a = int(msg.text.strip()); assert 18 <= a <= 99
     except:
-        return await msg.answer("❌ 18-99")
+        return await msg.answer("❌ Пожалуйста, введи корректный возраст цифрами (от 18 до 99).")
     await state.update_data(age=a)
-    await msg.answer("🚻 Пол:", reply_markup=KB.gender())
+    await msg.answer("🚻 *Укажи свой пол:*", reply_markup=KB.gender(), parse_mode=ParseMode.MARKDOWN)
     await state.set_state(RegStates.gender)
 
 @rt.callback_query(RegStates.gender, F.data.startswith("g:"))
 async def rg(call: CallbackQuery, state: FSMContext):
     await state.update_data(gender=call.data[2:])
-    await call.message.edit_text("🏙 Город:")
+    await call.message.edit_text("🏙 *Из какого ты города?*\n_Напиши название, например: Москва_", parse_mode=ParseMode.MARKDOWN)
     await state.set_state(RegStates.city)
     await call.answer()
 
 @rt.message(RegStates.city)
 async def rc(msg: Message, state: FSMContext):
-    c=msg.text.strip().title()
-    if len(c)<2:
-        await msg.answer("!")
+    c = msg.text.strip().title()
+    if len(c) < 2:
+        await msg.answer("❌ Название города слишком короткое. Попробуй еще раз:")
     else:
         await state.update_data(city=c)
-        await msg.answer("📸 Фото:", reply_markup=KB.skip())
+        await msg.answer(
+            "📸 *Покажи себя!*\n\n"
+            "Отправь своё лучшее фото. \n"
+            "💡 _Секрет: Фотографии с искренней улыбкой получают на 40% больше лайков!_", 
+            reply_markup=KB.skip(), parse_mode=ParseMode.MARKDOWN
+        )
         await state.set_state(RegStates.photo)
 
 @rt.message(RegStates.photo, F.photo)
 async def rp(msg: Message, state: FSMContext):
     await state.update_data(photo=msg.photo[-1].file_id)
-    await msg.answer("✍️ О себе:", reply_markup=KB.skip())
+    await msg.answer(
+        "✍️ *Расскажи немного о себе!*\n\n"
+        "Кого ищешь? Чем увлекаешься? Хорошее описание — залог отличного мэтча.\n"
+        "_Можно пропустить, но мы очень советуем написать хотя бы пару слов._", 
+        reply_markup=KB.skip(), parse_mode=ParseMode.MARKDOWN
+    )
     await state.set_state(RegStates.bio)
 
 @rt.callback_query(RegStates.photo, F.data=="skip")
 async def rps(call: CallbackQuery, state: FSMContext):
     await state.update_data(photo=None)
-    await call.message.edit_text("✍️ О себе:")
+    await call.message.edit_text(
+        "✍️ *Расскажи немного о себе!*\n\n"
+        "Кого ищешь? Чем увлекаешься? Хорошее описание — залог отличного мэтча.\n"
+        "_Можно пропустить, но мы очень советуем написать хотя бы пару слов._", parse_mode=ParseMode.MARKDOWN
+    )
     await state.set_state(RegStates.bio)
     await call.answer()
 
 @rt.message(RegStates.bio)
 async def rb(msg: Message, state: FSMContext):
     await state.update_data(bio=msg.text.strip()[:500])
-    await msg.answer("🎨 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
+    await msg.answer("🎨 *Выбери свои интересы*\n_Это поможет нам подбирать тебе идеальные пары:_", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
     await state.update_data(si=set())
     await state.set_state(RegStates.interests)
 
 @rt.callback_query(RegStates.bio, F.data=="skip")
 async def rbs(call: CallbackQuery, state: FSMContext):
     await state.update_data(bio="")
-    await call.message.edit_text("🎨 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text("🎨 *Выбери свои интересы*\n_Это поможет нам подбирать тебе идеальные пары:_", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
     await state.update_data(si=set())
     await state.set_state(RegStates.interests)
     await call.answer()
@@ -1411,7 +1428,7 @@ async def ri(call: CallbackQuery, state: FSMContext):
     if v=="done":
         d=await state.get_data()
         await state.update_data(interests=",".join(d.get("si",set())))
-        await call.message.edit_text("🎯 Кого ищешь?", reply_markup=KB.looking())
+        await call.message.edit_text("🎯 *Кого ты хочешь найти?*", reply_markup=KB.looking(), parse_mode=ParseMode.MARKDOWN)
         await state.set_state(RegStates.looking_for)
     else:
         d=await state.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
@@ -1423,7 +1440,12 @@ async def ri(call: CallbackQuery, state: FSMContext):
 @rt.callback_query(RegStates.looking_for, F.data.startswith("l:"))
 async def rl(call: CallbackQuery, state: FSMContext):
     await state.update_data(lf=call.data[2:])
-    await call.message.edit_text("📏 Возраст: `18-30`", parse_mode=ParseMode.MARKDOWN)
+    await call.message.edit_text(
+        "📏 *В каком возрасте ищем?*\n\n"
+        "Отправь диапазон через дефис.\n"
+        "_Например: 18-25_", 
+        parse_mode=ParseMode.MARKDOWN
+    )
     await state.set_state(RegStates.age_range)
     await call.answer()
 
@@ -1434,7 +1456,7 @@ async def rar(msg: Message, state: FSMContext):
         af,at=int(parts[0]),int(parts[1])
         assert 18<=af<=99 and 18<=at<=99 and af<=at
     except:
-        return await msg.answer("❌ `18-30`", parse_mode=ParseMode.MARKDOWN)
+        return await msg.answer("❌ Ошибка формата. Напиши диапазон вот так: `18-25`", parse_mode=ParseMode.MARKDOWN)
         
     d=await state.get_data()
     upd={
@@ -1448,11 +1470,33 @@ async def rar(msg: Message, state: FSMContext):
         upd["main_photo"]=d["photo"]
         
     await DB.update_user(msg.from_user.id, **upd)
+    
+    # Создаем красивую карточку результата
+    gender_emoji = "👨" if d["gender"] == "male" else "👩"
+    
+    finish_text = (
+        f"🎉 *Анкета успешно создана!*\n\n"
+        f"Вот как тебя увидят другие:\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"{gender_emoji} *{d['name']}*, {d['age']}\n"
+        f"📍 {d['city']}\n"
+        f"{d.get('bio', '')}\n"
+        f"🎨 {', '.join(d.get('si', set()))}\n"
+        f"━━━━━━━━━━━━━━\n\n"
+        f"🎁 *Сюрприз!* Мы дарим тебе 3 дня VIP-доступа абсолютно бесплатно, чтобы ты оценил(а) все фишки.\n\n"
+        f"Жми кнопку ниже и начинай знакомиться! 👇"
+    )
+    
     await state.clear()
-    await msg.answer(f"✅ *Готово!* \n\n🎁 Попробуй VIP 3 дня бесплатно!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎁 Попробовать!", callback_data="trial:start")],
-        [InlineKeyboardButton(text="⏭ Позже", callback_data="mn")]
-    ]), parse_mode=ParseMode.MARKDOWN)
+    
+    if d.get("photo"):
+        await msg.answer_photo(photo=d["photo"], caption=finish_text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎁 Забрать VIP и начать!", callback_data="trial:start")]
+        ]), parse_mode=ParseMode.MARKDOWN)
+    else:
+        await msg.answer(finish_text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎁 Забрать VIP и начать!", callback_data="trial:start")]
+        ]), parse_mode=ParseMode.MARKDOWN)
 
 # ==========================================
 # BROWSE
@@ -2009,7 +2053,7 @@ async def sp(msg: Message, state: FSMContext, user: Optional[Dict]):
     if achs: await msg.answer("🏆 " + ", ".join(a["title"] for a in achs))
 
 # ==========================================
-# BOOST & SHOP
+# ПРЕМИУМ МАГАЗИН И ТАРИФЫ
 # ==========================================
 @rt.callback_query(F.data=="profile:boost")
 async def pboost(call: CallbackQuery, user: Optional[Dict]):
@@ -2045,23 +2089,90 @@ async def shmn(call: CallbackQuery):
 
 @rt.callback_query(F.data=="sh:compare")
 async def shcmp(call: CallbackQuery):
-    txt = f"⚖️ *ТАРИФЫ*\n\n🆓 Free: 15❤️ 5💬\n⭐ Light 149₽: 100❤️ ∞💬 1⭐\n🌟 Std 349₽: ∞❤️ ∞💬 2⭐ 👁\n👑 Pro 599₽: 5⭐ 3🚀 👁\n💎 Forever 2999₽: навсегда!"
+    txt = (
+        "💎 *СРАВНЕНИЕ ТАРИФОВ* 💎\n"
+        "Выбери свой уровень доступа к знакомствам:\n\n"
+        
+        "🆓 *БЕСПЛАТНЫЙ*\n"
+        "├ ❤️ 15 лайков в день\n"
+        "├ 💬 5 сообщений новым мэтчам\n"
+        "└ 👁 Видно только 2 последних гостей\n\n"
+        
+        "⭐ *Винчик LIGHT* (от 149₽)\n"
+        "├ ❤️ 100 лайков\n"
+        "├ 💬 Безлимитные сообщения\n"
+        "├ ⭐ 1 Суперлайк в день\n"
+        "├ 👁 Видно 10 последних гостей\n"
+        "└ 🚀 Приоритетный показ анкеты\n\n"
+        
+        "🌟 *Винчик STANDARD* (от 349₽)\n"
+        "├ ❤️ *Безлимит* лайков\n"
+        "├ ⭐ 2 Суперлайка в день\n"
+        "├ 👁 Видно *всех* гостей\n"
+        "├ 💖 *Видно, кто тебя лайкнул*\n"
+        "└ 🥷 Режим Невидимки\n\n"
+        
+        "👑 *Винчик PRO* (от 599₽)\n"
+        "├ ⭐ 5 Суперлайков в день\n"
+        "├ 🚀 *3 Буста* в месяц бесплатно\n"
+        "└ 🏆 Твоя анкета всегда в ТОПе\n\n"
+        
+        "💎 *Винчик FOREVER* (2999₽)\n"
+        "└ Все фишки PRO навсегда! Единоразовая оплата."
+    )
     await call.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data=="sh:subs")
 async def shsubs(call: CallbackQuery): 
-    await call.message.edit_text("👑 *Тарифы:*", reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
+    txt = (
+        "🛍 *ПРЕМИУМ МАГАЗИН*\n\n"
+        "Прокачай свой профиль и находи пары в 5 раз быстрее! Выбери тариф, чтобы узнать подробности 👇"
+    )
+    await call.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
 
 @rt.callback_query(F.data.startswith("tf:"))
 async def tf(call: CallbackQuery):
     tier = call.data[3:]
     descs = {
-        "vip_light": "⭐ *LIGHT*\n100❤️ ·∞💬 ·1⭐ ·10👁 ·Приоритет",
-        "vip_standard": "🌟 *STANDARD* \n∞❤️ ·2⭐ ·Все👁 ·Кто лайкнул · 🚫 · 🚀",
-        "vip_pro": "👑 *PRO* \nВсё + 5⭐ ·3🚀 · 👁 ·Топ · 24/7",
-        "vip_lifetime": "💎 *FOREVER*\nВсё из Pro НАВСЕГДА! 2999₽",
+        "vip_light": (
+            "⭐ *ТАРИФ ВИНЧИК LIGHT* ⭐\n"
+            "_Идеально для активного старта_\n\n"
+            "✅ *100 лайков* каждый день\n"
+            "✅ *Безлимит* на сообщения мэтчам\n"
+            "✅ *1 Суперлайк* ежедневно\n"
+            "✅ *До 10 гостей* в истории просмотров\n"
+            "✅ Приоритет при показе твоей анкеты\n\n"
+            "👇 _Выбери период подписки:_"
+        ),
+        "vip_standard": (
+            "🌟 *ТАРИФ ВИНЧИК STANDARD* 🌟\n"
+            "_Наш самый популярный выбор!_\n\n"
+            "✅ *Скрытые лайки:* сразу видишь, кто тебя лайкнул!\n"
+            "✅ *Безлимитные* лайки\n"
+            "✅ *Безлимитные* гости профиля\n"
+            "✅ *Режим Невидимки* (смотри анкеты без следов)\n"
+            "✅ *2 Суперлайка* ежедневно\n\n"
+            "👇 _Выбери период подписки:_"
+        ),
+        "vip_pro": (
+            "👑 *ТАРИФ ВИНЧИК PRO* 👑\n"
+            "_Для тех, кто хочет максимум внимания_\n\n"
+            "✅ *Всё из тарифа Standard*\n"
+            "✅ *Анкета в ТОПе:* тебя видят первыми!\n"
+            "✅ *3 бесплатных Буста* каждый месяц\n"
+            "✅ *5 Суперлайков* ежедневно\n"
+            "✅ Уникальный значок 👑 в профиле\n\n"
+            "👇 _Выбери период подписки:_"
+        ),
+        "vip_lifetime": (
+            "💎 *ТАРИФ ВИНЧИК FOREVER* 💎\n"
+            "_Заплати один раз — пользуйся всегда_\n\n"
+            "Включает в себя абсолютно **все возможности тарифа PRO** без ежемесячных платежей.\n\n"
+            "✅ Максимальный статус в боте навсегда!\n\n"
+            "👇 _Купить доступ навсегда:_"
+        ),
     }
     await call.message.edit_text(descs.get(tier, ""), reply_markup=KB.buy(tier), parse_mode=ParseMode.MARKDOWN)
     await call.answer()
@@ -2193,7 +2304,7 @@ async def back_menu(call: CallbackQuery, state: FSMContext):
     await state.clear()
     try: await call.message.delete()
     except: pass
-    await call.message.answer("🔙", reply_markup=KB.main())
+    await call.message.answer("🔙 Возврат в меню", reply_markup=KB.main())
     await call.answer()
 
 # ==========================================
