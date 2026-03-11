@@ -1,11 +1,9 @@
 """
 ЗНАКОМСТВА НА ВИНЧИКЕ — Telegram Dating Bot v3.7 (ULTIMATE)
-
 Запуск:
- pip install aiogram==3.7.0 aiosqlite sqlalchemy yookassa python-dotenv
- python bot.py
+pip install aiogram==3.7.0 aiosqlite sqlalchemy yookassa python-dotenv
+python bot.py
 """
-
 import asyncio
 import os
 import uuid
@@ -56,10 +54,9 @@ logger = logging.getLogger(__name__)
 
 BOT_NAME = "🍷 Знакомства на Винчике"
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # CONFIG
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @dataclass
 class Config:
     BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -84,10 +81,9 @@ class Config:
 
 config = Config()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # ENUMS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class Gender(str, Enum):
     MALE = "male"
     FEMALE = "female"
@@ -117,10 +113,9 @@ class NotificationType(str, Enum):
     GUEST = "guest"
     SYSTEM = "system"
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # MODELS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class Base(DeclarativeBase):
     pass
 
@@ -144,7 +139,7 @@ class User(Base):
     is_banned = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
     is_profile_complete = Column(Boolean, default=False)
-    is_invisible = Column(Boolean, default=False)  # невидимка
+    is_invisible = Column(Boolean, default=False)
     subscription_tier = Column(SQLEnum(SubscriptionTier), default=SubscriptionTier.FREE)
     subscription_expires_at = Column(DateTime, nullable=True)
     daily_likes_remaining = Column(Integer, default=15)
@@ -168,7 +163,7 @@ class User(Base):
     notification_matches = Column(Boolean, default=True)
     notification_messages = Column(Boolean, default=True)
     notification_guests = Column(Boolean, default=True)
-    streak_days = Column(Integer, default=0)       # дни подряд
+    streak_days = Column(Integer, default=0)
     last_streak_date = Column(DateTime, nullable=True)
     total_online_minutes = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -181,7 +176,7 @@ class Like(Base):
     from_user_id = Column(Integer, ForeignKey("users.id"), index=True)
     to_user_id = Column(Integer, ForeignKey("users.id"), index=True)
     is_super_like = Column(Boolean, default=False)
-    message = Column(String(200), nullable=True)  # сообщение к суперлайку
+    message = Column(String(200), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Dislike(Base):
@@ -209,8 +204,8 @@ class ChatMessage(Base):
     match_id = Column(Integer, ForeignKey("matches.id"), index=True)
     sender_id = Column(Integer, ForeignKey("users.id"))
     text = Column(Text, nullable=True)
-    photo_id = Column(String(255), nullable=True)  # фото в чате
-    voice_id = Column(String(255), nullable=True)   # голосовое
+    photo_id = Column(String(255), nullable=True)
+    voice_id = Column(String(255), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -272,7 +267,7 @@ class DailyReward(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     day_number = Column(Integer)
-    reward_type = Column(String(50))  # likes, boost, superlike, trial
+    reward_type = Column(String(50))
     reward_amount = Column(Integer, default=1)
     claimed_at = Column(DateTime, default=datetime.utcnow)
 
@@ -293,10 +288,9 @@ class BroadcastLog(Base):
     failed_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # DATABASE
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 engine = create_async_engine(config.DATABASE_URL, echo=False)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -305,10 +299,9 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
     logger.info("✅ DB ready")
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # FSM
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class RegStates(StatesGroup):
     name = State(); age = State(); gender = State(); city = State()
     photo = State(); bio = State(); interests = State()
@@ -331,38 +324,37 @@ class AdminStates(StatesGroup):
     give_boost_count = State(); promo_code = State()
     promo_tier = State(); promo_duration = State(); promo_uses = State()
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# GAMIFICATION — ежедневные награды и достижения
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
+# GAMIFICATION
+# ==========================================
 class Gamification:
     DAILY_REWARDS = {
-        1: {"type": "likes", "amount": 5, "text": "❤️ +5 лайков"},
-        2: {"type": "likes", "amount": 5, "text": "❤️ +5 лайков"},
+        1: {"type": "likes", "amount": 5, "text": "🎁 +5 лайков"},
+        2: {"type": "likes", "amount": 5, "text": "🎁 +5 лайков"},
         3: {"type": "superlike", "amount": 1, "text": "⭐ +1 суперлайк"},
-        4: {"type": "likes", "amount": 10, "text": "❤️ +10 лайков"},
+        4: {"type": "likes", "amount": 10, "text": "🎁 +10 лайков"},
         5: {"type": "boost", "amount": 1, "text": "🚀 +1 буст"},
-        6: {"type": "likes", "amount": 10, "text": "❤️ +10 лайков"},
-        7: {"type": "trial", "amount": 1, "text": "🎁 1 день VIP бесплатно!"},
+        6: {"type": "likes", "amount": 10, "text": "🎁 +10 лайков"},
+        7: {"type": "trial", "amount": 1, "text": "👑 1 день VIP бесплатно!"},
     }
 
     ACHIEVEMENTS = {
-        "first_like": {"title": "❤️ Первый лайк", "desc": "Поставь первый лайк", "reward": "likes:3"},
-        "first_match": {"title": "💕 Первый мэтч", "desc": "Получи первый мэтч", "reward": "superlike:1"},
+        "first_like": {"title": "🎯 Первый лайк", "desc": "Поставь первый лайк", "reward": "likes:3"},
+        "first_match": {"title": "🔥 Первый мэтч", "desc": "Получи первый мэтч", "reward": "superlike:1"},
         "first_message": {"title": "💬 Первое сообщение", "desc": "Напиши первое сообщение", "reward": "likes:5"},
         "photo_added": {"title": "📸 Фотограф", "desc": "Добавь фото профиля", "reward": "likes:5"},
         "bio_added": {"title": "✍️ Писатель", "desc": "Напиши о себе", "reward": "likes:3"},
-        "interests_added": {"title": "🎯 Интересный", "desc": "Укажи интересы", "reward": "likes:5"},
-        "streak_3": {"title": "🔥 3 дня подряд", "desc": "Заходи 3 дня подряд", "reward": "superlike:1"},
-        "streak_7": {"title": "🔥 Неделя!", "desc": "Заходи 7 дней подряд", "reward": "boost:1"},
-        "streak_30": {"title": "🔥 Месяц!", "desc": "30 дней подряд", "reward": "boost:3"},
-        "likes_10": {"title": "💘 10 лайков", "desc": "Получи 10 лайков", "reward": "likes:5"},
-        "likes_50": {"title": "💘 50 лайков", "desc": "Получи 50 лайков", "reward": "boost:1"},
-        "likes_100": {"title": "💘 Сотня!", "desc": "100 лайков", "reward": "superlike:3"},
+        "interests_added": {"title": "🎨 Интересный", "desc": "Укажи интересы", "reward": "likes:5"},
+        "streak_3": {"title": "⚡ 3 дня подряд", "desc": "Заходи 3 дня подряд", "reward": "superlike:1"},
+        "streak_7": {"title": "📅 Неделя!", "desc": "Заходи 7 дней подряд", "reward": "boost:1"},
+        "streak_30": {"title": "🏆 Месяц!", "desc": "30 дней подряд", "reward": "boost:3"},
+        "likes_10": {"title": "💝 10 лайков", "desc": "Получи 10 лайков", "reward": "likes:5"},
+        "likes_50": {"title": "💖 50 лайков", "desc": "Получи 50 лайков", "reward": "boost:1"},
+        "likes_100": {"title": "💯 Сотня!", "desc": "100 лайков", "reward": "superlike:3"},
         "matches_5": {"title": "💕 5 мэтчей", "desc": "Получи 5 мэтчей", "reward": "boost:1"},
-        "matches_10": {"title": "💕 10 мэтчей", "desc": "10 мэтчей!", "reward": "superlike:2"},
-        "referral_1": {"title": "👥 Первый друг", "desc": "Пригласи 1 друга", "reward": "boost:1"},
-        "referral_5": {"title": "👥 5 друзей", "desc": "Пригласи 5 друзей", "reward": "boost:3"},
+        "matches_10": {"title": "💞 10 мэтчей", "desc": "10 мэтчей!", "reward": "superlike:2"},
+        "referral_1": {"title": "🤝 Первый друг", "desc": "Пригласи 1 друга", "reward": "boost:1"},
+        "referral_5": {"title": "🫂 5 друзей", "desc": "Пригласи 5 друзей", "reward": "boost:3"},
     }
 
     ICEBREAKERS = [
@@ -371,7 +363,7 @@ class Gamification:
         "Привет! Если бы ты мог(ла) телепортироваться куда угодно — куда?",
         "Привет! Вино красное или белое? 🍷",
         "Привет! Какая суперспособность была бы у тебя?",
-        "Привет! Опиши себя тремя эмодзи 😄",
+        "Привет! Опиши себя тремя эмодзи 🙈",
         "Привет! Какой последний сериал тебя зацепил?",
         "Привет! Утро или вечер — когда ты на максимуме?",
         "Привет! Если бы твоя жизнь была фильмом — какой жанр?",
@@ -384,79 +376,57 @@ class Gamification:
 
     @staticmethod
     async def update_streak(user: Dict) -> Tuple[int, Optional[Dict]]:
-        """Обновить серию дней. Возвращает (day_number, reward_or_None)"""
         now = datetime.utcnow()
         last = user.get("last_streak_date")
         streak = user.get("streak_days", 0)
-
         if last is None:
             streak = 1
         elif last.date() == now.date():
-            return streak, None  # уже заходил сегодня
+            return streak, None
         elif last.date() == (now - timedelta(days=1)).date():
             streak += 1
         else:
-            streak = 1  # серия прервана
-
+            streak = 1
         day_in_cycle = ((streak - 1) % 7) + 1
         reward = Gamification.DAILY_REWARDS.get(day_in_cycle)
 
         async with async_session_maker() as s:
-            await s.execute(update(User).where(User.telegram_id == user["telegram_id"]).values(
-                streak_days=streak, last_streak_date=now
-            ))
+            await s.execute(update(User).where(User.telegram_id == user["telegram_id"]).values(streak_days=streak, last_streak_date=now))
             await s.commit()
 
         return streak, reward
 
     @staticmethod
     async def claim_reward(user_id: int, tg_id: int, reward: Dict) -> str:
-        """Начислить награду"""
         rtype = reward["type"]
         amount = reward["amount"]
-
         async with async_session_maker() as s:
-            # Проверка: уже получал сегодня?
             today = datetime.utcnow().date()
             existing = await s.execute(
-                select(DailyReward).where(and_(
-                    DailyReward.user_id == user_id,
-                    func.date(DailyReward.claimed_at) == today
-                ))
+                select(DailyReward).where(and_(DailyReward.user_id == user_id, func.date(DailyReward.claimed_at) == today))
             )
             if existing.scalar_one_or_none():
                 return ""
-
             s.add(DailyReward(user_id=user_id, day_number=0, reward_type=rtype, reward_amount=amount))
 
             if rtype == "likes":
-                await s.execute(update(User).where(User.telegram_id == tg_id).values(
-                    daily_likes_remaining=User.daily_likes_remaining + amount))
+                await s.execute(update(User).where(User.telegram_id == tg_id).values(daily_likes_remaining=User.daily_likes_remaining + amount))
             elif rtype == "superlike":
-                await s.execute(update(User).where(User.telegram_id == tg_id).values(
-                    daily_superlikes_remaining=User.daily_superlikes_remaining + amount))
+                await s.execute(update(User).where(User.telegram_id == tg_id).values(daily_superlikes_remaining=User.daily_superlikes_remaining + amount))
             elif rtype == "boost":
-                await s.execute(update(User).where(User.telegram_id == tg_id).values(
-                    boost_count=User.boost_count + amount))
+                await s.execute(update(User).where(User.telegram_id == tg_id).values(boost_count=User.boost_count + amount))
             elif rtype == "trial":
                 now = datetime.utcnow()
-                await s.execute(update(User).where(User.telegram_id == tg_id).values(
-                    subscription_tier=SubscriptionTier.VIP_LIGHT,
-                    subscription_expires_at=now + timedelta(days=1)
-                ))
-
+                await s.execute(update(User).where(User.telegram_id == tg_id).values(subscription_tier=SubscriptionTier.VIP_LIGHT, subscription_expires_at=now + timedelta(days=1)))
             await s.commit()
 
         return reward["text"]
 
     @staticmethod
     async def check_achievements(user: Dict) -> List[Dict]:
-        """Проверить и выдать достижения"""
         earned = []
         async with async_session_maker() as s:
-            existing = await s.execute(
-                select(Achievement.achievement_type).where(Achievement.user_id == user["id"])
-            )
+            existing = await s.execute(select(Achievement.achievement_type).where(Achievement.user_id == user["id"]))
             already = set(r[0] for r in existing.fetchall())
 
             checks = {
@@ -481,37 +451,31 @@ class Gamification:
                 if condition and ach_type not in already:
                     ach_info = Gamification.ACHIEVEMENTS[ach_type]
                     s.add(Achievement(user_id=user["id"], achievement_type=ach_type))
-
-                    # Начислить награду
                     reward_parts = ach_info["reward"].split(":")
                     r_type, r_amount = reward_parts[0], int(reward_parts[1])
+
                     if r_type == "likes":
-                        await s.execute(update(User).where(User.id == user["id"]).values(
-                            daily_likes_remaining=User.daily_likes_remaining + r_amount))
+                        await s.execute(update(User).where(User.id == user["id"]).values(daily_likes_remaining=User.daily_likes_remaining + r_amount))
                     elif r_type == "superlike":
-                        await s.execute(update(User).where(User.id == user["id"]).values(
-                            daily_superlikes_remaining=User.daily_superlikes_remaining + r_amount))
+                        await s.execute(update(User).where(User.id == user["id"]).values(daily_superlikes_remaining=User.daily_superlikes_remaining + r_amount))
                     elif r_type == "boost":
-                        await s.execute(update(User).where(User.id == user["id"]).values(
-                            boost_count=User.boost_count + r_amount))
+                        await s.execute(update(User).where(User.id == user["id"]).values(boost_count=User.boost_count + r_amount))
 
                     earned.append(ach_info)
 
             if earned:
                 await s.commit()
-
         return earned
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # COMPATIBILITY
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class Compatibility:
     INTERESTS_LIST = [
-        "🎵 Музыка", "🎬 Кино", "📚 Книги", "🏃 Спорт", "✈️ Путешествия",
+        "🎧 Музыка", "🎬 Кино", "📚 Книги", "⚽ Спорт", "✈️ Путешествия",
         "🍳 Кулинария", "🎮 Игры", "📷 Фото", "🎨 Искусство", "💻 IT",
-        "🐾 Животные", "🧘 Йога", "🏕️ Природа", "🍷 Вино", "💃 Танцы",
-        "🎸 Концерты", "🏋️ Фитнес", "📺 Сериалы", "🏖️ Пляж", "☕ Кофе",
+        "🐾 Животные", "🧘 Йога", "🌿 Природа", "🍷 Вино", "💃 Танцы",
+        "🎸 Концерты", "💪 Фитнес", "📺 Сериалы", "🏖 Пляж", "☕ Кофе",
     ]
 
     @staticmethod
@@ -541,42 +505,41 @@ class Compatibility:
         views = max(u.get("views_count", 0), 1)
         return round(likes * 0.4 + u.get("matches_count", 0) * 2 + (likes / views) * 50, 1)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # MONETIZATION ENGINE
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class Monetization:
     @staticmethod
     def get_likes_limit_msg(user: Dict) -> Tuple[str, InlineKeyboardMarkup]:
         hidden = user.get("hidden_likes_count", 0)
         msgs = [
-            f"💔 *Лайки закончились!*\n{hidden} человек ждут ответа...\n\n🥂 Безлимит от 149₽/мес!",
-            f"🚫 *Лимит!* За сегодня тебя лайкнули {hidden} раз!\n\n✨ Разблокируй →",
+            f"🛑 *Лайки закончились!*\n{hidden} человек ждут ответа...\n\n👑 Безлимит от 149₽/мес!",
+            f"🛑 *Лимит!* За сегодня тебя лайкнули {hidden} раз!\n\n👑 Разблокируй ⬇️",
         ]
         return random.choice(msgs), InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🥂 Безлимит 149₽", callback_data="tf:vip_light")],
+            [InlineKeyboardButton(text="👑 Безлимит 149₽", callback_data="tf:vip_light")],
             [InlineKeyboardButton(text="🎁 3 дня бесплатно", callback_data="trial:start")],
         ])
 
     @staticmethod
     def get_msg_limit_msg(name: str) -> Tuple[str, InlineKeyboardMarkup]:
-        return f"💬 *Лимит сообщений!*\n{name} ждёт ответа 😔\n\n🥂 Безлимит от 149₽!", InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🥂 Безлимит", callback_data="tf:vip_light")],
+        return f"🛑 *Лимит сообщений!*\n{name} ждёт ответа 😢\n\n👑 Безлимит от 149₽!", InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="👑 Безлимит", callback_data="tf:vip_light")],
             [InlineKeyboardButton(text="🎁 Бесплатно", callback_data="trial:start")],
         ])
 
     @staticmethod
     def get_hidden_likes_msg(count: int) -> Tuple[str, InlineKeyboardMarkup]:
         return f"❤️ *{count} скрытых лайков!*\nУзнай кто — с VIP!", InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"❤️ Открыть ({count})", callback_data="likes:list")],
-            [InlineKeyboardButton(text="🥂 VIP", callback_data="sh:subs")],
+            [InlineKeyboardButton(text=f"👁 Открыть ({count})", callback_data="likes:list")],
+            [InlineKeyboardButton(text="👑 VIP", callback_data="sh:subs")],
         ])
 
     @staticmethod
     def get_low_likes_warning(remaining: int) -> Optional[str]:
-        if remaining == 5: return "⚡ *5 лайков!* VIP = безлимит 🥂"
+        if remaining == 5: return "⚠️ *5 лайков!* VIP = безлимит 👑"
         if remaining == 3: return "⚠️ *3 лайка!* VIP от 149₽/мес"
-        if remaining == 1: return "🔴 *Последний лайк!*"
+        if remaining == 1: return "⚠️ *Последний лайк!*"
         return None
 
     @staticmethod
@@ -585,12 +548,11 @@ class Monetization:
         last = user.get("last_teaser_shown")
         return not last or (datetime.utcnow() - last).total_seconds() > 300
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # DATABASE SERVICE
-# ═══════════════════════════════════════════════════════════════════════════════
-
-TIER_NAMES = {"free": "🍷 Бесплатный", "vip_light": "🥂 Винчик Light",
-              "vip_standard": "🍾 Винчик Standard", "vip_pro": "👑 Винчик Pro",
+# ==========================================
+TIER_NAMES = {"free": "🆓 Бесплатный", "vip_light": "⭐ Винчик Light",
+              "vip_standard": "🌟 Винчик Standard", "vip_pro": "👑 Винчик Pro",
               "vip_lifetime": "💎 Винчик Forever"}
 
 class DB:
@@ -644,26 +606,27 @@ class DB:
 
     @staticmethod
     def is_creator(u: Dict) -> bool: return u.get("telegram_id") in config.CREATOR_IDS
+
     @staticmethod
     def is_admin(u: Dict) -> bool: return u.get("telegram_id") in config.ADMIN_IDS
 
     @staticmethod
     def get_badge(u: Dict) -> str:
-        if DB.is_creator(u): return "👑 "
+        if DB.is_creator(u): return "👨‍💻 "
         if u.get("subscription_tier") == "vip_lifetime": return "💎 "
-        if u.get("subscription_tier") == "vip_pro": return "⭐ "
-        if DB.is_vip(u): return "✨ "
+        if u.get("subscription_tier") == "vip_pro": return "👑 "
+        if DB.is_vip(u): return "⭐ "
         if u.get("is_verified"): return "✅ "
         return ""
 
     @staticmethod
     def get_online_status(u: Dict) -> str:
         la = u.get("last_active_at")
-        if not la: return "🔴"
+        if not la: return ""
         diff = (datetime.utcnow() - la).total_seconds()
         if diff < 300: return "🟢"
         if diff < 3600: return "🟡"
-        return "🔴"
+        return "⚪"
 
     @staticmethod
     def get_superlikes_limit(u: Dict) -> int:
@@ -710,7 +673,9 @@ class DB:
             t = u.get("subscription_tier", "free")
             dl = 9999 if t in ("vip_standard", "vip_pro", "vip_lifetime") else (100 if t == "vip_light" else config.FREE_DAILY_LIKES)
             dm = 9999 if DB.is_vip(u) else config.FREE_DAILY_MESSAGES
-            return await DB.update_user(u["telegram_id"], daily_likes_remaining=dl, daily_messages_remaining=dm, daily_superlikes_remaining=sl, last_limits_reset=now, last_active_at=now)
+            return await DB.update_user(u["telegram_id"], daily_likes_remaining=dl,
+                                        daily_messages_remaining=dm, daily_superlikes_remaining=sl, last_limits_reset=now,
+                                        last_active_at=now)
         await DB.update_user(u["telegram_id"], last_active_at=now)
         return u
 
@@ -743,7 +708,8 @@ class DB:
             who = await DB.get_who_liked_me(u["id"])
             pids = [uid for uid in who if uid not in exc]
             if pids:
-                pr = await s.execute(select(User).where(and_(User.id.in_(pids), User.is_active == True, User.is_banned == False, User.is_profile_complete == True)))
+                pr = await s.execute(select(User).where(and_(User.id.in_(pids), User.is_active == True,
+                                                             User.is_banned == False, User.is_profile_complete == True)))
                 for p in pr.scalars().all():
                     d = DB._to_dict(p); d["_priority"] = "liked_you"; d["_compat"] = Compatibility.calc_score(u, d)
                     results.append(d); exc.add(p.id)
@@ -751,7 +717,8 @@ class DB:
             # Основной поиск
             rem = limit - len(results)
             if rem > 0:
-                q = select(User).where(and_(User.is_active == True, User.is_banned == False, User.is_profile_complete == True, User.id.not_in(exc), User.age >= u["age_from"], User.age <= u["age_to"], User.city == u["city"]))
+                q = select(User).where(and_(User.is_active == True, User.is_banned == False,
+                                            User.is_profile_complete == True, User.id.not_in(exc), User.age >= u["age_from"], User.age <= u["age_to"], User.city == u["city"]))
                 lf = u.get("looking_for", "both")
                 if lf == "male": q = q.where(User.gender == Gender.MALE)
                 elif lf == "female": q = q.where(User.gender == Gender.FEMALE)
@@ -770,7 +737,8 @@ class DB:
             if len(results) < limit:
                 need = limit - len(results)
                 all_exc = exc | set(r["id"] for r in results)
-                q2 = select(User).where(and_(User.is_active == True, User.is_banned == False, User.is_profile_complete == True, User.id.not_in(all_exc), User.city != u["city"], User.age >= u["age_from"], User.age <= u["age_to"]))
+                q2 = select(User).where(and_(User.is_active == True, User.is_banned == False,
+                                             User.is_profile_complete == True, User.id.not_in(all_exc), User.city != u["city"], User.age >= u["age_from"], User.age <= u["age_to"]))
                 lf = u.get("looking_for", "both")
                 if lf == "male": q2 = q2.where(User.gender == Gender.MALE)
                 elif lf == "female": q2 = q2.where(User.gender == Gender.FEMALE)
@@ -795,6 +763,7 @@ class DB:
             rev = await s.execute(select(Like).where(and_(Like.from_user_id == tid, Like.to_user_id == fd)))
             is_match = rev.scalar_one_or_none() is not None
             match_id = None; compat = 0.0
+
             if is_match:
                 existing = await s.execute(select(Match).where(or_(and_(Match.user1_id == fd, Match.user2_id == tid), and_(Match.user1_id == tid, Match.user2_id == fd))))
                 if not existing.scalar_one_or_none():
@@ -1090,10 +1059,9 @@ class DB:
         async with async_session_maker() as s:
             s.add(BroadcastLog(admin_id=admin_id, message_text=text, target_filter=target, sent_count=sent, failed_count=failed)); await s.commit()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # ANTI-SPAM & PAY
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class AntiSpam:
     def __init__(self): self.u = {}
     async def check(self, uid, act, limit=5, tw=60):
@@ -1102,6 +1070,7 @@ class AntiSpam:
         self.u[k] = [t for t in self.u[k] if now - t < tw]
         if len(self.u[k]) >= limit: return False
         self.u[k].append(now); return True
+
 anti_spam = AntiSpam()
 
 class Pay:
@@ -1132,26 +1101,27 @@ class Pay:
             return {"status": y.status}
         except: return {"status": "error"}
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # KEYBOARDS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class KB:
     @staticmethod
     def main(unread=0, hidden=0):
         return ReplyKeyboardMarkup(keyboard=[
-            [KeyboardButton(text="📋 Анкеты"), KeyboardButton(text=f"❤️ Симпатии{f' ({hidden})' if hidden else ''}")],
+            [KeyboardButton(text="❤️ Анкеты"), KeyboardButton(text=f"💝 Симпатии{f' ({hidden})' if hidden else ''}")],
             [KeyboardButton(text=f"💬 Чаты{f' ({unread})' if unread else ''}"), KeyboardButton(text="👀 Гости")],
-            [KeyboardButton(text="🛍️ Магазин"), KeyboardButton(text="👤 Профиль")],
+            [KeyboardButton(text="💎 Магазин"), KeyboardButton(text="👤 Профиль")],
             [KeyboardButton(text="🎁 Награды"), KeyboardButton(text="❓ FAQ")],
         ], resize_keyboard=True)
 
     @staticmethod
     def gender(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👨 М", callback_data="g:male"), InlineKeyboardButton(text="👩 Ж", callback_data="g:female")]])
+
     @staticmethod
-    def looking(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👨", callback_data="l:male"), InlineKeyboardButton(text="👩", callback_data="l:female")], [InlineKeyboardButton(text="👫 Всех", callback_data="l:both")]])
+    def looking(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👨", callback_data="l:male"), InlineKeyboardButton(text="👩", callback_data="l:female")], [InlineKeyboardButton(text="🌈 Всех", callback_data="l:both")]])
+
     @staticmethod
-    def skip(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⏭️ Пропустить", callback_data="skip")]])
+    def skip(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⏭ Пропустить", callback_data="skip")]])
 
     @staticmethod
     def interests(sel=None):
@@ -1169,49 +1139,49 @@ class KB:
 
     @staticmethod
     def search(uid, sl=False):
-        row = [InlineKeyboardButton(text="👍", callback_data=f"lk:{uid}"), InlineKeyboardButton(text="👎", callback_data=f"dl:{uid}")]
+        row = [InlineKeyboardButton(text="👎", callback_data=f"dl:{uid}"), InlineKeyboardButton(text="❤️", callback_data=f"lk:{uid}")]
         if sl: row.insert(1, InlineKeyboardButton(text="⭐", callback_data=f"sl:{uid}"))
-        return InlineKeyboardMarkup(inline_keyboard=[row, [InlineKeyboardButton(text="🚩", callback_data=f"rp:{uid}")]])
+        return InlineKeyboardMarkup(inline_keyboard=[row, [InlineKeyboardButton(text="⚠️", callback_data=f"rp:{uid}")]])
 
     @staticmethod
     def no_profiles(vip=False):
         b = [[InlineKeyboardButton(text="🌍 Другие города", callback_data="sr:expand")]]
         b.append([InlineKeyboardButton(text="🔄 Сброс" + (" (VIP)" if not vip else ""), callback_data="sr:reset" if vip else "sr:reset_locked")])
-        b += [[InlineKeyboardButton(text="🔁 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="◀️", callback_data="mn")]]
+        b += [[InlineKeyboardButton(text="🔄 Ещё", callback_data="sr:retry")], [InlineKeyboardButton(text="🔙", callback_data="mn")]]
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def matches(ms):
-        b = [[InlineKeyboardButton(text=f"{m['online']} {m['name']},{m['age']}{' 🎯'+str(int(m['compat']))+'%' if m.get('compat') else ''}{' 🔴'+str(m['unread']) if m.get('unread') else ''}", callback_data=f"ch:{m['user_id']}")] for m in ms[:10]]
-        b.append([InlineKeyboardButton(text="◀️", callback_data="mn")])
+        b = [[InlineKeyboardButton(text=f"{m['online']} {m['name']},{m['age']}{' '+str(int(m['compat']))+'%' if m.get('compat') else ''}{' 💬'+str(m['unread']) if m.get('unread') else ''}", callback_data=f"ch:{m['user_id']}")] for m in ms[:10]]
+        b.append([InlineKeyboardButton(text="🔙", callback_data="mn")])
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def chat_actions(mid, pid, icebreaker_sent=False, msg_count=0):
         b = []
         if not icebreaker_sent and msg_count == 0:
-            b.append([InlineKeyboardButton(text="💡 Айсбрейкер", callback_data=f"ice:{mid}:{pid}")])
-        b += [[InlineKeyboardButton(text="◀️ Мэтчи", callback_data="bm")], [InlineKeyboardButton(text="💔 Размэтч", callback_data=f"um:{mid}")]]
+            b.append([InlineKeyboardButton(text="🧊 Айсбрейкер", callback_data=f"ice:{mid}:{pid}")])
+        b += [[InlineKeyboardButton(text="🔙 Мэтчи", callback_data="bm")], [InlineKeyboardButton(text="💔 Размэтч", callback_data=f"um:{mid}")]]
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def shop():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🥂 VIP", callback_data="sh:subs"), InlineKeyboardButton(text="🚀 Буст", callback_data="sh:boost")],
-            [InlineKeyboardButton(text="📊 Сравнить", callback_data="sh:compare")],
-            [InlineKeyboardButton(text="🎁 Промо", callback_data="sh:promo"), InlineKeyboardButton(text="🎁 Пробный", callback_data="trial:start")],
-            [InlineKeyboardButton(text="👥 Друзья", callback_data="referral:info")],
-            [InlineKeyboardButton(text="◀️", callback_data="mn")]])
+            [InlineKeyboardButton(text="👑 VIP", callback_data="sh:subs"), InlineKeyboardButton(text="🚀 Буст", callback_data="sh:boost")],
+            [InlineKeyboardButton(text="⚖️ Сравнить", callback_data="sh:compare")],
+            [InlineKeyboardButton(text="🎟 Промо", callback_data="sh:promo"), InlineKeyboardButton(text="🎁 Пробный", callback_data="trial:start")],
+            [InlineKeyboardButton(text="🤝 Друзья", callback_data="referral:info")],
+            [InlineKeyboardButton(text="🔙", callback_data="mn")]])
 
     @staticmethod
     def subs():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🥂 Light 149₽", callback_data="tf:vip_light")],
-            [InlineKeyboardButton(text="🍾 Standard 349₽ 🔥", callback_data="tf:vip_standard")],
+            [InlineKeyboardButton(text="⭐ Light 149₽", callback_data="tf:vip_light")],
+            [InlineKeyboardButton(text="🌟 Standard 349₽", callback_data="tf:vip_standard")],
             [InlineKeyboardButton(text="👑 Pro 599₽", callback_data="tf:vip_pro")],
             [InlineKeyboardButton(text="💎 Forever 2999₽", callback_data="tf:vip_lifetime")],
             [InlineKeyboardButton(text="🎁 3 дня бесплатно!", callback_data="trial:start")],
-            [InlineKeyboardButton(text="◀️", callback_data="sh:mn")]])
+            [InlineKeyboardButton(text="🔙", callback_data="sh:mn")]])
 
     @staticmethod
     def buy(tier):
@@ -1221,60 +1191,64 @@ class KB:
         for dur, price in prices.get(tier, []):
             label = f"💳 {price//100}₽" + (f"/{dur}дн" if dur else " навсегда")
             b.append([InlineKeyboardButton(text=label, callback_data=f"by:{tier}:{dur}:{price}")])
-        b.append([InlineKeyboardButton(text="◀️", callback_data="sh:subs")])
+        b.append([InlineKeyboardButton(text="🔙", callback_data="sh:subs")])
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def profile(vip=False, hidden=0):
-        b = [[InlineKeyboardButton(text="✏️", callback_data="pe"), InlineKeyboardButton(text="📸", callback_data="ed:photo"), InlineKeyboardButton(text="🎯", callback_data="ed:interests")],
+        b = [[InlineKeyboardButton(text="✏️", callback_data="pe"), InlineKeyboardButton(text="📸", callback_data="ed:photo"), InlineKeyboardButton(text="🎨", callback_data="ed:interests")],
              [InlineKeyboardButton(text="🚀 Буст", callback_data="profile:boost"), InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")]]
         if vip: b.append([InlineKeyboardButton(text=f"❤️ Лайки ({hidden})", callback_data="likes:list")])
-        elif hidden: b.append([InlineKeyboardButton(text=f"🔒 {hidden} лайков → VIP", callback_data="sh:subs")])
-        b.append([InlineKeyboardButton(text="🏆 Достижения", callback_data="achievements"), InlineKeyboardButton(text="👥 Друзья", callback_data="referral:info")])
+        elif hidden: b.append([InlineKeyboardButton(text=f"❤️ {hidden} лайков 👑 VIP", callback_data="sh:subs")])
+        b.append([InlineKeyboardButton(text="🏆 Достижения", callback_data="achievements"), InlineKeyboardButton(text="🤝 Друзья", callback_data="referral:info")])
         return InlineKeyboardMarkup(inline_keyboard=b)
 
     @staticmethod
     def settings(user):
-        inv = "👻 Невидимка ✅" if user.get("is_invisible") else "👻 Невидимка ❌"
+        inv = "🟢 Невидимка ❌" if user.get("is_invisible") else "⚪ Невидимка ✅"
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text=inv, callback_data="set:invisible")],
-            [InlineKeyboardButton(text="🎂 Диапазон", callback_data="ed:agerange")],
-            [InlineKeyboardButton(text="🔍 Кого ищу", callback_data="ed:looking")],
-            [InlineKeyboardButton(text="◀️ Профиль", callback_data="pv")]])
+            [InlineKeyboardButton(text="📏 Диапазон", callback_data="ed:agerange")],
+            [InlineKeyboardButton(text="🎯 Кого ищу", callback_data="ed:looking")],
+            [InlineKeyboardButton(text="🔙 Профиль", callback_data="pv")]])
 
     @staticmethod
     def edit():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="👤", callback_data="ed:name"), InlineKeyboardButton(text="🎂", callback_data="ed:age"), InlineKeyboardButton(text="🌍", callback_data="ed:city")],
+            [InlineKeyboardButton(text="📝", callback_data="ed:name"), InlineKeyboardButton(text="🎂", callback_data="ed:age"), InlineKeyboardButton(text="🏙", callback_data="ed:city")],
             [InlineKeyboardButton(text="✍️ О себе", callback_data="ed:bio")],
-            [InlineKeyboardButton(text="◀️", callback_data="pv")]])
+            [InlineKeyboardButton(text="🔙", callback_data="pv")]])
 
     @staticmethod
     def report_reasons():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🚨 Спам", callback_data="rr:spam"), InlineKeyboardButton(text="😱 Фейк", callback_data="rr:fake")],
-            [InlineKeyboardButton(text="🔞 18+", callback_data="rr:nsfw"), InlineKeyboardButton(text="😠 Оскорб", callback_data="rr:harass")],
-            [InlineKeyboardButton(text="❌", callback_data="mn")]])
+            [InlineKeyboardButton(text="🚫 Спам", callback_data="rr:spam"), InlineKeyboardButton(text="🎭 Фейк", callback_data="rr:fake")],
+            [InlineKeyboardButton(text="🔞 18+", callback_data="rr:nsfw"), InlineKeyboardButton(text="🤬 Оскорб", callback_data="rr:harass")],
+            [InlineKeyboardButton(text="🔙", callback_data="mn")]])
 
     @staticmethod
-    def admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📊", callback_data="adm:stats"), InlineKeyboardButton(text="🔍", callback_data="adm:search")], [InlineKeyboardButton(text="📢", callback_data="adm:broadcast"), InlineKeyboardButton(text="🚩", callback_data="adm:reports")], [InlineKeyboardButton(text="🎁", callback_data="adm:promo")], [InlineKeyboardButton(text="✖️", callback_data="mn")]])
+    def admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📊", callback_data="adm:stats"), InlineKeyboardButton(text="🔍", callback_data="adm:search")], [InlineKeyboardButton(text="📢", callback_data="adm:broadcast"), InlineKeyboardButton(text="🚩", callback_data="adm:reports")], [InlineKeyboardButton(text="🎟", callback_data="adm:promo")], [InlineKeyboardButton(text="🔙", callback_data="mn")]])
+
     @staticmethod
     def admin_user(uid, banned):
         ban = InlineKeyboardButton(text="✅ Разбан", callback_data=f"au:unban:{uid}") if banned else InlineKeyboardButton(text="🚫 Бан", callback_data=f"au:ban:{uid}")
-        return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✨ VIP", callback_data=f"au:givevip:{uid}"), InlineKeyboardButton(text="🚀", callback_data=f"au:giveboost:{uid}")], [ban], [InlineKeyboardButton(text="🛡️", callback_data="adm:main")]])
-    @staticmethod
-    def give_vip_tiers(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🥂", callback_data="gv:vip_light"), InlineKeyboardButton(text="🍾", callback_data="gv:vip_standard")], [InlineKeyboardButton(text="👑", callback_data="gv:vip_pro"), InlineKeyboardButton(text="💎", callback_data="gv:vip_lifetime")], [InlineKeyboardButton(text="❌", callback_data="adm:main")]])
-    @staticmethod
-    def back_admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🛡️", callback_data="adm:main")]])
-    @staticmethod
-    def broadcast_targets(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👥 Все", callback_data="bc:all"), InlineKeyboardButton(text="Free", callback_data="bc:free")], [InlineKeyboardButton(text="❌", callback_data="adm:main")]])
-    @staticmethod
-    def broadcast_confirm(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✅", callback_data="bc:send")], [InlineKeyboardButton(text="❌", callback_data="adm:main")]])
+        return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👑 VIP", callback_data=f"au:givevip:{uid}"), InlineKeyboardButton(text="🚀", callback_data=f"au:giveboost:{uid}")], [ban], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
 
-# ═══════════════════════════════════════════════════════════════════════════════
+    @staticmethod
+    def give_vip_tiers(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⭐", callback_data="gv:vip_light"), InlineKeyboardButton(text="🌟", callback_data="gv:vip_standard")], [InlineKeyboardButton(text="👑", callback_data="gv:vip_pro"), InlineKeyboardButton(text="💎", callback_data="gv:vip_lifetime")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+
+    @staticmethod
+    def back_admin(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+
+    @staticmethod
+    def broadcast_targets(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌍 Все", callback_data="bc:all"), InlineKeyboardButton(text="Free", callback_data="bc:free")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+
+    @staticmethod
+    def broadcast_confirm(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✅", callback_data="bc:send")], [InlineKeyboardButton(text="🔙", callback_data="adm:main")]])
+
+# ==========================================
 # MIDDLEWARE & ROUTER
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 class UserMiddleware(BaseMiddleware):
     async def __call__(self, handler, event, data):
         tg = event.from_user if isinstance(event, (Message, CallbackQuery)) else None
@@ -1291,39 +1265,37 @@ class UserMiddleware(BaseMiddleware):
 
 rt = Router()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 def profile_text(u):
-    badge = DB.get_badge(u); sub = TIER_NAMES.get(u["subscription_tier"], "🍷")
+    badge = DB.get_badge(u); sub = TIER_NAMES.get(u["subscription_tier"], "🆓")
     if u.get("subscription_expires_at") and u["subscription_tier"] not in ("free", "vip_lifetime"):
         sub += f" (до {u['subscription_expires_at'].strftime('%d.%m')})"
     bi = ""
     if DB.is_boosted(u): bi += f"\n🚀 Буст до {u['boost_expires_at'].strftime('%d.%m %H:%M')}"
-    if u.get("boost_count"): bi += f" · 📦{u['boost_count']}"
-    streak = f"\n🔥 Серия: {u['streak_days']} дней" if u.get("streak_days", 0) > 1 else ""
+    if u.get("boost_count"): bi += f" · 🚀{u['boost_count']}"
+    streak = f"\n⚡ Серия: {u['streak_days']} дней" if u.get("streak_days", 0) > 1 else ""
     online = DB.get_online_status(u)
-    return (f"👤 *Профиль* {online}\n\n{badge}*{u['name']}*, {u['age']}\n🌍 {u['city']}\n"
-            f"{u['bio'] or '_Нет описания_'}\n{'🎯 '+u['interests'] if u.get('interests') else ''}\n\n"
-            f"👁️ {u['views_count']} · ❤️ {u['likes_received_count']} · 💘 {u['matches_count']}"
-            f"\n🔍 {u['age_from']}-{u['age_to']}\nСтатус: {sub}{bi}{streak}")
+    return (f"👤 *Профиль* {online}\n\n{badge}*{u['name']}*, {u['age']}\n📍 {u['city']}\n"
+            f"{u['bio'] or '_Нет описания_'}\n{'🎨 '+u['interests'] if u.get('interests') else ''}\n\n"
+            f"👀 {u['views_count']} · ❤️ {u['likes_received_count']} · 💕 {u['matches_count']}"
+            f"\n🎯 {u['age_from']}-{u['age_to']}\nСтатус: {sub}{bi}{streak}")
 
 def card_text(p, v):
     badge = DB.get_badge(p); boost = " 🚀" if DB.is_boosted(p) else ""
     compat = Compatibility.calc_score(v, p); online = DB.get_online_status(p)
     pb = ""
     if p.get("_priority") == "liked_you":
-        pb = "\n❤️ _Лайкнул тебя!_" if DB.is_vip(v) else "\n💡 _Может быть взаимно..._"
+        pb = "\n❤️ _Лайкнул тебя!_" if DB.is_vip(v) else "\n❤️ _Может быть взаимно..._"
     elif p.get("_priority") == "other_city": pb = "\n🌍 _Другой город_"
-    return (f"{badge}*{p['name']}*{boost}, {p['age']} {online}\n🌍 {p['city']}{pb}\n"
-            f"{p['bio'] or ''}\n{'🎯 '+p['interests'] if p.get('interests') else ''}\n\n"
-            f"🎯 *{compat:.0f}%*")
+    return (f"{badge}*{p['name']}*{boost}, {p['age']} {online}\n📍 {p['city']}{pb}\n"
+            f"{p['bio'] or ''}\n{'🎨 '+p['interests'] if p.get('interests') else ''}\n\n"
+            f"💖 *{compat:.0f}%*")
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # HANDLERS — START
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.message(CommandStart())
 async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
     await state.clear()
@@ -1332,7 +1304,7 @@ async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
     if user and user.get("is_profile_complete"):
         un = await DB.get_unread(user["id"])
         who = await DB.get_who_liked_me(user["id"]); await DB.update_hidden_likes(user["id"])
-
+        
         # Серия дней и награда
         streak, reward = await Gamification.update_streak(user)
         reward_text = ""
@@ -1345,851 +1317,1100 @@ async def cmd_start(msg: Message, state: FSMContext, user: Optional[Dict]):
         achievements = await Gamification.check_achievements(user)
         ach_text = ""
         if achievements:
-            ach_text = "\n\n🏆 *Новые достижения:*\n" + "\n".join(f"  {a['title']} — {a['desc']}" for a in achievements)
+            ach_text = "\n\n🏆 *Новые достижения:*\n" + "\n".join(f"🏅 {a['title']} — {a['desc']}" for a in achievements)
 
-        st = TIER_NAMES.get(user["subscription_tier"], "🍷")
+        st = TIER_NAMES.get(user["subscription_tier"], "🆓")
         if DB.is_boosted(user): st += " · 🚀"
         extras = ""
-        if who and not DB.is_vip(user): extras = f"\n🔒 *{len(who)} скрытых лайков!*"
+        if who and not DB.is_vip(user): extras = f"\n❤️ *{len(who)} скрытых лайков!*"
         elif who: extras = f"\n❤️ Лайков: {len(who)}"
 
         await msg.answer(
-            f"🍷 *{user['name']}!*\n\n{st}\n👁️ {user['views_count']} · 💘 {user['matches_count']} · 💬 {un}"
-            f"\n🔥 Серия: {streak} дн{extras}{reward_text}{ach_text}",
+            f"👋 *{user['name']}!*\n\n{st}\n👀 {user['views_count']} · 💕 {user['matches_count']} · 💬 {un}"
+            f"\n⚡ Серия: {streak} дн{extras}{reward_text}{ach_text}",
             reply_markup=KB.main(un, len(who)), parse_mode=ParseMode.MARKDOWN)
     else:
         if not user:
             user = await DB.create_user(msg.from_user.id, msg.from_user.username)
-            if ref_code: await DB.process_referral(user["id"], ref_code)
+        if ref_code: await DB.process_referral(user["id"], ref_code)
         await msg.answer(f"🍷 *Добро пожаловать в {BOT_NAME}!*\n\nСоздадим анкету 👇", parse_mode=ParseMode.MARKDOWN)
-        await msg.answer("👤 Как тебя зовут?", reply_markup=ReplyKeyboardRemove())
+        await msg.answer("📝 Как тебя зовут?", reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegStates.name)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # REGISTRATION
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.message(RegStates.name)
-async def rn(m, s): n=m.text.strip(); (await m.answer("⚠️ 2-50")) if len(n)<2 or len(n)>50 else (await s.update_data(name=n), await m.answer("🎂 Возраст? _(18-99)_", parse_mode=ParseMode.MARKDOWN), await s.set_state(RegStates.age))
+async def rn(msg: Message, state: FSMContext):
+    n=msg.text.strip()
+    if len(n)<2 or len(n)>50:
+        await msg.answer("❌ 2-50")
+    else:
+        await state.update_data(name=n)
+        await msg.answer("🎂 Возраст? _(18-99)_", parse_mode=ParseMode.MARKDOWN)
+        await state.set_state(RegStates.age)
 
 @rt.message(RegStates.age)
-async def ra(m, s):
-    try: a=int(m.text.strip()); assert 18<=a<=99
-    except: return await m.answer("⚠️ 18-99")
-    await s.update_data(age=a); await m.answer("👫 Пол:", reply_markup=KB.gender()); await s.set_state(RegStates.gender)
+async def ra(msg: Message, state: FSMContext):
+    try:
+        a=int(msg.text.strip()); assert 18<=a<=99
+    except:
+        return await msg.answer("❌ 18-99")
+    await state.update_data(age=a)
+    await msg.answer("🚻 Пол:", reply_markup=KB.gender())
+    await state.set_state(RegStates.gender)
 
 @rt.callback_query(RegStates.gender, F.data.startswith("g:"))
-async def rg(c, s): await s.update_data(gender=c.data[2:]); await c.message.edit_text("🌍 Город:"); await s.set_state(RegStates.city); await c.answer()
+async def rg(call: CallbackQuery, state: FSMContext):
+    await state.update_data(gender=call.data[2:])
+    await call.message.edit_text("🏙 Город:")
+    await state.set_state(RegStates.city)
+    await call.answer()
 
 @rt.message(RegStates.city)
-async def rc(m, s): c=m.text.strip().title(); (await m.answer("🌍!")) if len(c)<2 else (await s.update_data(city=c), await m.answer("📸 Фото:", reply_markup=KB.skip()), await s.set_state(RegStates.photo))
+async def rc(msg: Message, state: FSMContext):
+    c=msg.text.strip().title()
+    if len(c)<2:
+        await msg.answer("!")
+    else:
+        await state.update_data(city=c)
+        await msg.answer("📸 Фото:", reply_markup=KB.skip())
+        await state.set_state(RegStates.photo)
 
 @rt.message(RegStates.photo, F.photo)
-async def rp(m, s): await s.update_data(photo=m.photo[-1].file_id); await m.answer("✍️ О себе:", reply_markup=KB.skip()); await s.set_state(RegStates.bio)
+async def rp(msg: Message, state: FSMContext):
+    await state.update_data(photo=msg.photo[-1].file_id)
+    await msg.answer("✍️ О себе:", reply_markup=KB.skip())
+    await state.set_state(RegStates.bio)
 
 @rt.callback_query(RegStates.photo, F.data=="skip")
-async def rps(c, s): await s.update_data(photo=None); await c.message.edit_text("✍️ О себе:"); await s.set_state(RegStates.bio); await c.answer()
+async def rps(call: CallbackQuery, state: FSMContext):
+    await state.update_data(photo=None)
+    await call.message.edit_text("✍️ О себе:")
+    await state.set_state(RegStates.bio)
+    await call.answer()
 
 @rt.message(RegStates.bio)
-async def rb(m, s): await s.update_data(bio=m.text.strip()[:500]); await m.answer("🎯 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN); await s.update_data(si=set()); await s.set_state(RegStates.interests)
+async def rb(msg: Message, state: FSMContext):
+    await state.update_data(bio=msg.text.strip()[:500])
+    await msg.answer("🎨 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
+    await state.update_data(si=set())
+    await state.set_state(RegStates.interests)
 
 @rt.callback_query(RegStates.bio, F.data=="skip")
-async def rbs(c, s): await s.update_data(bio=""); await c.message.edit_text("🎯 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN); await s.update_data(si=set()); await s.set_state(RegStates.interests); await c.answer()
+async def rbs(call: CallbackQuery, state: FSMContext):
+    await state.update_data(bio="")
+    await call.message.edit_text("🎨 *Интересы:*", reply_markup=KB.interests(), parse_mode=ParseMode.MARKDOWN)
+    await state.update_data(si=set())
+    await state.set_state(RegStates.interests)
+    await call.answer()
 
 @rt.callback_query(RegStates.interests, F.data.startswith("int:"))
-async def ri(c, s):
-    v=c.data[4:]
+async def ri(call: CallbackQuery, state: FSMContext):
+    v=call.data[4:]
     if v=="done":
-        d=await s.get_data(); await s.update_data(interests=",".join(d.get("si",set())))
-        await c.message.edit_text("🔍 Кого ищешь?", reply_markup=KB.looking()); await s.set_state(RegStates.looking_for)
+        d=await state.get_data()
+        await state.update_data(interests=",".join(d.get("si",set())))
+        await call.message.edit_text("🎯 Кого ищешь?", reply_markup=KB.looking())
+        await state.set_state(RegStates.looking_for)
     else:
-        d=await s.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
+        d=await state.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
         sel.discard(item) if item in sel else sel.add(item)
-        await s.update_data(si=sel); await c.message.edit_reply_markup(reply_markup=KB.interests(sel))
-    await c.answer()
+        await state.update_data(si=sel)
+        await call.message.edit_reply_markup(reply_markup=KB.interests(sel))
+        await call.answer()
 
 @rt.callback_query(RegStates.looking_for, F.data.startswith("l:"))
-async def rl(c, s): await s.update_data(lf=c.data[2:]); await c.message.edit_text("🎯 Возраст: `18-30`", parse_mode=ParseMode.MARKDOWN); await s.set_state(RegStates.age_range); await c.answer()
+async def rl(call: CallbackQuery, state: FSMContext):
+    await state.update_data(lf=call.data[2:])
+    await call.message.edit_text("📏 Возраст: `18-30`", parse_mode=ParseMode.MARKDOWN)
+    await state.set_state(RegStates.age_range)
+    await call.answer()
 
 @rt.message(RegStates.age_range)
-async def rar(m, s):
-    try: parts=m.text.strip().replace(" ","").split("-"); af,at=int(parts[0]),int(parts[1]); assert 18<=af<=99 and 18<=at<=99 and af<=at
-    except: return await m.answer("⚠️ `18-30`", parse_mode=ParseMode.MARKDOWN)
-    d=await s.get_data()
-    upd={"name":d["name"],"age":d["age"],"gender":Gender(d["gender"]),"city":d["city"],"bio":d.get("bio",""),"interests":d.get("interests",""),"looking_for":LookingFor(d["lf"]),"age_from":af,"age_to":at,"is_profile_complete":True}
-    if d.get("photo"): upd["photos"]=d["photo"]; upd["main_photo"]=d["photo"]
-    await DB.update_user(m.from_user.id, **upd); await s.clear()
-    await m.answer(f"✅ *Готово!* 🍷\n\n🎁 Попробуй VIP 3 дня бесплатно!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+async def rar(msg: Message, state: FSMContext):
+    try:
+        parts=msg.text.strip().replace(" ","").split("-")
+        af,at=int(parts[0]),int(parts[1])
+        assert 18<=af<=99 and 18<=at<=99 and af<=at
+    except:
+        return await msg.answer("❌ `18-30`", parse_mode=ParseMode.MARKDOWN)
+        
+    d=await state.get_data()
+    upd={
+        "name":d["name"], "age":d["age"], "gender":Gender(d["gender"]),
+        "city":d["city"], "bio":d.get("bio",""), "interests":d.get("interests",""),
+        "looking_for":LookingFor(d["lf"]), "age_from":af, "age_to":at,
+        "is_profile_complete":True
+    }
+    if d.get("photo"):
+        upd["photos"]=d["photo"]
+        upd["main_photo"]=d["photo"]
+        
+    await DB.update_user(msg.from_user.id, **upd)
+    await state.clear()
+    await msg.answer(f"✅ *Готово!* \n\n🎁 Попробуй VIP 3 дня бесплатно!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎁 Попробовать!", callback_data="trial:start")],
-        [InlineKeyboardButton(text="⏭️ Позже", callback_data="mn")]
+        [InlineKeyboardButton(text="⏭ Позже", callback_data="mn")]
     ]), parse_mode=ParseMode.MARKDOWN)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # BROWSE
-# ═══════════════════════════════════════════════════════════════════════════════
-
-@rt.message(F.text=="📋 Анкеты")
-async def browse(m, s, user):
-    if not user or not user.get("is_profile_complete"): return await m.answer("⚠️ /start")
-    await s.set_state(SearchStates.browsing)
+# ==========================================
+@rt.message(F.text=="❤️ Анкеты")
+async def browse(msg: Message, state: FSMContext, user: Optional[Dict]):
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
+    await state.set_state(SearchStates.browsing)
     ps=await DB.search_profiles(user,5)
-    if not ps: return await m.answer("😔 *Анкеты закончились!*", reply_markup=KB.no_profiles(DB.is_vip(user)), parse_mode=ParseMode.MARKDOWN)
-    await s.update_data(sq=[p["id"] for p in ps[1:]]); await show_card(m, ps[0], user)
+    if not ps: return await msg.answer("🛑 *Анкеты закончились!*", reply_markup=KB.no_profiles(DB.is_vip(user)), parse_mode=ParseMode.MARKDOWN)
+    await state.update_data(sq=[p["id"] for p in ps[1:]])
+    await show_card(msg, ps[0], user)
 
 async def show_card(msg, p, v):
     if not v.get("is_invisible"): await DB.add_guest(v["id"], p["id"])
-    txt=card_text(p, v); sl=v.get("daily_superlikes_remaining",0)>0
-    if p.get("main_photo"): await msg.answer_photo(photo=p["main_photo"], caption=txt, reply_markup=KB.search(p["id"],sl), parse_mode=ParseMode.MARKDOWN)
-    else: await msg.answer(txt, reply_markup=KB.search(p["id"],sl), parse_mode=ParseMode.MARKDOWN)
+    txt=card_text(p, v)
+    sl=v.get("daily_superlikes_remaining",0)>0
+    if p.get("main_photo"):
+        await msg.answer_photo(photo=p["main_photo"], caption=txt, reply_markup=KB.search(p["id"],sl), parse_mode=ParseMode.MARKDOWN)
+    else:
+        await msg.answer(txt, reply_markup=KB.search(p["id"],sl), parse_mode=ParseMode.MARKDOWN)
 
-async def next_card(ev, state, user):
+async def next_card(ev, state: FSMContext, user: Dict):
     d=await state.get_data(); q=d.get("sq",[])
     if q:
-        nid=q.pop(0); await state.update_data(sq=q); p=await DB.get_user_by_id(nid)
+        nid=q.pop(0)
+        await state.update_data(sq=q)
+        p=await DB.get_user_by_id(nid)
         if p and p.get("is_active") and not p.get("is_banned"):
-            p["_priority"]="normal"; p["_compat"]=Compatibility.calc_score(user,p)
-            msg=ev.message if isinstance(ev,CallbackQuery) else ev; return await show_card(msg,p,user)
+            p["_priority"]="normal"
+            p["_compat"]=Compatibility.calc_score(user,p)
+            msg=ev.message if isinstance(ev,CallbackQuery) else ev
+            return await show_card(msg,p,user)
+            
     ps=await DB.search_profiles(user,5)
     msg=ev.message if isinstance(ev,CallbackQuery) else ev
-    if ps: await state.update_data(sq=[p["id"] for p in ps[1:]]); await show_card(msg,ps[0],user)
-    else: await msg.answer("😔 *Закончились!*", reply_markup=KB.no_profiles(DB.is_vip(user)), parse_mode=ParseMode.MARKDOWN)
+    if ps:
+        await state.update_data(sq=[p["id"] for p in ps[1:]])
+        await show_card(msg,ps[0],user)
+    else:
+        await msg.answer("🛑 *Закончились!*", reply_markup=KB.no_profiles(DB.is_vip(user)), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data.startswith("lk:"))
-async def h_like(c, s, user):
-    if not user: return await c.answer("❌")
+async def h_like(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    if not user: return await call.answer("❌")
     if not DB.is_vip(user) and user.get("daily_likes_remaining",0)<=0:
         t,k=Monetization.get_likes_limit_msg(user)
-        try: await c.message.edit_caption(caption=t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
-        except: await c.message.edit_text(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
+        try: await call.message.edit_caption(caption=t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
+        except: await call.message.edit_text(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
         return
-    if not await anti_spam.check(c.from_user.id,"like"): return await c.answer("⚠️!",show_alert=True)
-    tid=int(c.data[3:]); res=await DB.add_like(user["id"],tid); await DB.dec_likes(user["telegram_id"])
-    user=await DB.get_user(c.from_user.id)
+        
+    if not await anti_spam.check(call.from_user.id,"like"): return await call.answer("⚠️ !",show_alert=True)
+    
+    tid=int(call.data[3:])
+    res=await DB.add_like(user["id"],tid)
+    await DB.dec_likes(user["telegram_id"])
+    
+    user=await DB.get_user(call.from_user.id)
     w=Monetization.get_low_likes_warning(user.get("daily_likes_remaining",0))
-    if w and not DB.is_vip(user): await c.message.answer(w, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🥂 Безлимит", callback_data="sh:subs")]]), parse_mode=ParseMode.MARKDOWN)
+    if w and not DB.is_vip(user):
+        await call.message.answer(w, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👑 Безлимит", callback_data="sh:subs")]]), parse_mode=ParseMode.MARKDOWN)
+        
     if res["is_match"]:
-        t=await DB.get_user_by_id(tid); tn=t["name"] if t else "?"; compat=res.get("compat",0)
-        try: await c.message.edit_caption(caption=f"💕 *Мэтч с {tn}!* 🥂\n🎯 {compat}%", parse_mode=ParseMode.MARKDOWN)
-        except: await c.message.edit_text(f"💕 *Мэтч с {tn}!* 🥂\n🎯 {compat}%", parse_mode=ParseMode.MARKDOWN)
+        t=await DB.get_user_by_id(tid)
+        tn=t["name"] if t else "?"
+        compat=res.get("compat",0)
+        try: await call.message.edit_caption(caption=f"🔥 *Мэтч с {tn}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
+        except: await call.message.edit_text(f"🔥 *Мэтч с {tn}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
         if t:
-            try: await c.bot.send_message(t["telegram_id"], f"💕 *Мэтч с {user['name']}!* 🥂\n🎯 {compat}%", parse_mode=ParseMode.MARKDOWN)
+            try: await call.bot.send_message(t["telegram_id"], f"🔥 *Мэтч с {user['name']}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
             except: pass
+            
         # Достижения
-        user=await DB.get_user(c.from_user.id); achs=await Gamification.check_achievements(user)
-        if achs: await c.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
-    else: await c.answer("👍")
-    await next_card(c,s,user); await c.answer()
+        user=await DB.get_user(call.from_user.id)
+        achs=await Gamification.check_achievements(user)
+        if achs: await call.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
+    else:
+        await call.answer("❤️")
+        
+    await next_card(call, state, user)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("sl:"))
-async def h_superlike(c, s, user):
+async def h_superlike(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    if user.get("daily_superlikes_remaining",0)<=0: return await c.answer("❌ Суперлайки → VIP!", show_alert=True)
-    tid=int(c.data[3:]); res=await DB.add_like(user["id"],tid,is_super=True)
-    await DB.dec_superlikes(user["telegram_id"]); await DB.dec_likes(user["telegram_id"])
+    if user.get("daily_superlikes_remaining",0)<=0: return await call.answer("⭐ Суперлайки 👑 VIP!", show_alert=True)
+    
+    tid=int(call.data[3:])
+    res=await DB.add_like(user["id"],tid,is_super=True)
+    await DB.dec_superlikes(user["telegram_id"])
+    await DB.dec_likes(user["telegram_id"])
+    
     t=await DB.get_user_by_id(tid)
     if res["is_match"]:
-        tn=t["name"] if t else "?"; compat=res.get("compat",0)
-        try: await c.message.edit_caption(caption=f"💕 *Мэтч с {tn}!* 🥂⭐\n🎯 {compat}%", parse_mode=ParseMode.MARKDOWN)
+        tn=t["name"] if t else "?"
+        compat=res.get("compat",0)
+        try: await call.message.edit_caption(caption=f"🔥 *Мэтч с {tn}!* \n💖 {compat}%", parse_mode=ParseMode.MARKDOWN)
         except: pass
         if t:
-            try: await c.bot.send_message(t["telegram_id"], f"💕 *Мэтч с {user['name']}!* 🥂", parse_mode=ParseMode.MARKDOWN)
+            try: await call.bot.send_message(t["telegram_id"], f"🔥 *Мэтч с {user['name']}!* ", parse_mode=ParseMode.MARKDOWN)
             except: pass
     else:
-        await c.answer("⭐!")
+        await call.answer("⭐!")
         if t:
-            try: await c.bot.send_message(t["telegram_id"], f"⭐ *{user['name']}* отправил суперлайк!", parse_mode=ParseMode.MARKDOWN)
+            try: await call.bot.send_message(t["telegram_id"], f"⭐ *{user['name']}* отправил суперлайк!", parse_mode=ParseMode.MARKDOWN)
             except: pass
-    user=await DB.get_user(c.from_user.id); await next_card(c,s,user); await c.answer()
+            
+    user=await DB.get_user(call.from_user.id)
+    await next_card(call, state, user)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("dl:"))
-async def h_dislike(c, s, user):
+async def h_dislike(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    await DB.add_dislike(user["id"], int(c.data[3:])); await next_card(c,s,user); await c.answer()
+    await DB.add_dislike(user["id"], int(call.data[3:]))
+    await next_card(call, state, user)
+    await call.answer()
 
 @rt.callback_query(F.data=="sr:expand")
-async def sr_expand(c, s, user):
+async def sr_expand(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     ps=await DB.search_profiles(user,5)
-    if ps: await s.update_data(sq=[p["id"] for p in ps[1:]]); await s.set_state(SearchStates.browsing); await show_card(c.message,ps[0],user)
-    else: await c.message.edit_text("😔 Позже!")
-    await c.answer()
+    if ps:
+        await state.update_data(sq=[p["id"] for p in ps[1:]])
+        await state.set_state(SearchStates.browsing)
+        await show_card(call.message,ps[0],user)
+    else:
+        await call.message.edit_text("⏳ Позже!")
+    await call.answer()
 
 @rt.callback_query(F.data=="sr:reset")
-async def sr_reset(c, s, user):
-    if not user or not DB.is_vip(user): return await c.answer("🥂 VIP!", show_alert=True)
-    cnt=await DB.reset_dislikes(user["id"]); await c.answer(f"🔄 {cnt}!", show_alert=True)
-    user=await DB.get_user(c.from_user.id); ps=await DB.search_profiles(user,5)
-    if ps: await s.update_data(sq=[p["id"] for p in ps[1:]]); await s.set_state(SearchStates.browsing); await show_card(c.message,ps[0],user)
+async def sr_reset(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    if not user or not DB.is_vip(user): return await call.answer("👑 VIP!", show_alert=True)
+    cnt=await DB.reset_dislikes(user["id"])
+    await call.answer(f"🔄 {cnt}!", show_alert=True)
+    user=await DB.get_user(call.from_user.id)
+    ps=await DB.search_profiles(user,5)
+    if ps:
+        await state.update_data(sq=[p["id"] for p in ps[1:]])
+        await state.set_state(SearchStates.browsing)
+        await show_card(call.message,ps[0],user)
 
 @rt.callback_query(F.data=="sr:reset_locked")
-async def sr_locked(c, user):
-    await c.message.answer("🔒 *Сброс — только VIP!*\n\n🍾 От 349₽/мес", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🍾 Standard", callback_data="tf:vip_standard")],[InlineKeyboardButton(text="🎁 Бесплатно", callback_data="trial:start")]]), parse_mode=ParseMode.MARKDOWN); await c.answer()
+async def sr_locked(call: CallbackQuery, user: Optional[Dict]):
+    await call.message.answer("👑 *Сброс — только VIP!*\n\n🌟 От 349₽/мес", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🌟 Standard", callback_data="tf:vip_standard")],[InlineKeyboardButton(text="🎁 Бесплатно", callback_data="trial:start")]]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="sr:retry")
-async def sr_retry(c, s, user):
+async def sr_retry(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     ps=await DB.search_profiles(user,5)
-    if ps: await s.update_data(sq=[p["id"] for p in ps[1:]]); await s.set_state(SearchStates.browsing); await show_card(c.message,ps[0],user)
-    else: await c.answer("😔 Пока нет", show_alert=True)
-    await c.answer()
+    if ps:
+        await state.update_data(sq=[p["id"] for p in ps[1:]])
+        await state.set_state(SearchStates.browsing)
+        await show_card(call.message,ps[0],user)
+    else:
+        await call.answer("⏳ Пока нет", show_alert=True)
+    await call.answer()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # MATCHES, CHAT, ICEBREAKER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-@rt.message(F.text.startswith("❤️"))
-async def show_matches(m, user):
-    if not user or not user.get("is_profile_complete"): return await m.answer("⚠️ /start")
+# ==========================================
+@rt.message(F.text.startswith("💝"))
+async def show_matches(msg: Message, user: Optional[Dict]):
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
     ms=await DB.get_matches(user["id"])
-    if ms: await m.answer(f"❤️ *Мэтчи ({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
-    else: await m.answer("😞 Пока нет мэтчей!")
+    if ms: await msg.answer(f"💕 *Мэтчи ({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    else: await msg.answer("⏳ Пока нет мэтчей!")
 
 @rt.callback_query(F.data.startswith("ch:"))
-async def start_chat(c, s, user):
+async def start_chat(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    pid=int(c.data[3:]); p=await DB.get_user_by_id(pid)
-    if not p: return await c.answer("?")
+    pid=int(call.data[3:])
+    p=await DB.get_user_by_id(pid)
+    if not p: return await call.answer("?")
     mid=await DB.get_match_between(user["id"],pid)
-    if not mid: return await c.answer("Нет мэтча")
+    if not mid: return await call.answer("Нет мэтча")
+    
     await DB.mark_read(mid, user["id"])
     msgs=await DB.get_msgs(mid,5)
-    # Получить инфо о мэтче
     ms = await DB.get_matches(user["id"])
     match_info = next((m for m in ms if m["user_id"] == pid), {})
-
-    txt=f"💬 *{p['name']}* {DB.get_online_status(p)}\n\n"
+    
+    txt=f"👤 *{p['name']}* {DB.get_online_status(p)}\n\n"
     for mg in msgs:
         sn="Вы" if mg["sender_id"]==user["id"] else p["name"]
         txt+=f"*{sn}:* {mg['text']}\n"
     if not msgs: txt+="_Напиши первым!_"
-    await s.update_data(cp=pid,mi=mid); await s.set_state(ChatStates.chatting)
-    await c.message.edit_text(txt, reply_markup=KB.chat_actions(mid, pid, match_info.get("icebreaker_sent", False), match_info.get("msg_count", 0)), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    
+    await state.update_data(cp=pid,mi=mid)
+    await state.set_state(ChatStates.chatting)
+    await call.message.edit_text(txt, reply_markup=KB.chat_actions(mid, pid, match_info.get("icebreaker_sent", False), match_info.get("msg_count", 0)), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("ice:"))
-async def send_icebreaker(c, s, user):
+async def send_icebreaker(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     """Отправить айсбрейкер"""
     if not user: return
-    parts = c.data.split(":")
+    parts = call.data.split(":")
     mid, pid = int(parts[1]), int(parts[2])
     icebreaker = Gamification.get_icebreaker()
     await DB.send_msg(mid, user["id"], icebreaker)
     await DB.send_icebreaker(mid)
     p = await DB.get_user_by_id(pid)
     if p:
-        try: await c.bot.send_message(p["telegram_id"], f"💬 *{user['name']}:* {icebreaker}", parse_mode=ParseMode.MARKDOWN)
+        try: await call.bot.send_message(p["telegram_id"], f"💬 *{user['name']}:* {icebreaker}", parse_mode=ParseMode.MARKDOWN)
         except: pass
-    await c.message.answer(f"💡 Айсбрейкер отправлен:\n_{icebreaker}_", parse_mode=ParseMode.MARKDOWN)
-    await c.answer()
+    await call.message.answer(f"🧊 Айсбрейкер отправлен:\n_{icebreaker}_", parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.message(ChatStates.chatting)
-async def send_msg(m, s, user):
+async def send_msg(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    d=await s.get_data(); mid,pid=d.get("mi"),d.get("cp")
-    if not mid: await s.clear(); return await m.answer("Закрыт", reply_markup=KB.main())
+    d=await state.get_data()
+    mid,pid=d.get("mi"),d.get("cp")
+    if not mid:
+        await state.clear()
+        return await msg.answer("Закрыт", reply_markup=KB.main())
+        
     if not DB.is_vip(user) and user.get("daily_messages_remaining",0)<=0:
-        p=await DB.get_user_by_id(pid); t,k=Monetization.get_msg_limit_msg(p["name"] if p else "")
-        return await m.answer(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
-    # Поддержка фото в чате
+        p=await DB.get_user_by_id(pid)
+        t,k=Monetization.get_msg_limit_msg(p["name"] if p else "")
+        return await msg.answer(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
+        
     photo_id = None
-    if m.photo:
-        photo_id = m.photo[-1].file_id
+    if msg.photo:
+        photo_id = msg.photo[-1].file_id
         await DB.send_msg(mid, user["id"], "[Фото]", photo_id=photo_id)
     else:
-        await DB.send_msg(mid, user["id"], m.text)
+        await DB.send_msg(mid, user["id"], msg.text)
+        
     await DB.dec_messages(user["telegram_id"])
     p=await DB.get_user_by_id(pid)
+    
     if p:
         try:
             if photo_id:
-                await m.bot.send_photo(p["telegram_id"], photo=photo_id, caption=f"📸 *{user['name']}*", parse_mode=ParseMode.MARKDOWN)
+                await msg.bot.send_photo(p["telegram_id"], photo=photo_id, caption=f"💬 *{user['name']}*", parse_mode=ParseMode.MARKDOWN)
             else:
-                await m.bot.send_message(p["telegram_id"], f"💬 *{user['name']}:* {m.text}", parse_mode=ParseMode.MARKDOWN)
+                await msg.bot.send_message(p["telegram_id"], f"💬 *{user['name']}:* {msg.text}", parse_mode=ParseMode.MARKDOWN)
         except: pass
+        
     # Достижение «первое сообщение»
-    user=await DB.get_user(m.from_user.id); achs=await Gamification.check_achievements(user)
-    if achs: await m.answer("🏆 " + ", ".join(a["title"] for a in achs))
-    else: await m.answer("✅")
+    user=await DB.get_user(msg.from_user.id)
+    achs=await Gamification.check_achievements(user)
+    if achs: await msg.answer("🏆 " + ", ".join(a["title"] for a in achs))
 
 @rt.callback_query(F.data.startswith("um:"))
-async def unmatch(c, s, user):
+async def unmatch(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    await DB.unmatch(user["id"],int(c.data[3:])); await s.clear()
-    await c.message.edit_text("💔 Удалено."); await c.answer()
+    await DB.unmatch(user["id"],int(call.data[3:]))
+    await state.clear()
+    await call.message.edit_text("💔 Удалено.")
+    await call.answer()
 
 @rt.callback_query(F.data=="bm")
-async def back_matches(c, s, user):
-    await s.clear()
+async def back_matches(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    await state.clear()
     if not user: return
     ms=await DB.get_matches(user["id"])
-    if ms: await c.message.edit_text(f"❤️ *({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
-    else: await c.message.edit_text("😞 Нет мэтчей")
-    await c.answer()
+    if ms: await call.message.edit_text(f"💕 *({len(ms)}):*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    else: await call.message.edit_text("⏳ Нет мэтчей")
+    await call.answer()
 
 @rt.message(F.text.startswith("💬"))
-async def show_chats(m, user):
+async def show_chats(msg: Message, user: Optional[Dict]):
     if not user or not user.get("is_profile_complete"): return
     ms=await DB.get_matches(user["id"])
-    if ms: await m.answer("💬 *Диалоги:*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
-    else: await m.answer("💤 Нет сообщений")
+    if ms: await msg.answer("💬 *Диалоги:*", reply_markup=KB.matches(ms), parse_mode=ParseMode.MARKDOWN)
+    else: await msg.answer("⏳ Нет сообщений")
 
 @rt.message(F.text=="👀 Гости")
-async def show_guests(m, user):
+async def show_guests(msg: Message, user: Optional[Dict]):
     if not user or not user.get("is_profile_complete"): return
     lim=20 if DB.is_vip(user) else config.FREE_GUESTS_VISIBLE
     gs=await DB.get_guests(user["id"],lim)
-    if not gs: return await m.answer("😴 Нет гостей")
+    if not gs: return await msg.answer("⏳ Нет гостей")
     txt="👀 *Гости:*\n\n"
     for i,g in enumerate(gs,1): txt+=f"{i}. {g['name']},{g['age']}—{g['city']}\n"
-    if not DB.is_vip(user): txt+="\n🔒 _Больше — с VIP_"
-    await m.answer(txt, parse_mode=ParseMode.MARKDOWN)
+    if not DB.is_vip(user): txt+="\n👑 _Больше — с VIP_"
+    await msg.answer(txt, parse_mode=ParseMode.MARKDOWN)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # WHO LIKED & TRIAL & REFERRAL
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.callback_query(F.data=="likes:list")
-async def who_liked(c, user):
+async def who_liked(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
     if not DB.is_vip(user):
         who=await DB.get_who_liked_me(user["id"])
-        t,k=Monetization.get_hidden_likes_msg(len(who)); await c.message.answer(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN); return await c.answer()
+        t,k=Monetization.get_hidden_likes_msg(len(who))
+        await call.message.answer(t, reply_markup=k, parse_mode=ParseMode.MARKDOWN)
+        return await call.answer()
+        
     users=await DB.get_likes_received(user["id"],20)
-    if not users: return await c.answer("😔 Пока нет", show_alert=True)
+    if not users: return await call.answer("⏳ Пока нет", show_alert=True)
     b = [[InlineKeyboardButton(text=f"{'⭐' if u.get('is_super_like') else '❤️'} {u['name']},{u['age']}", callback_data=f"wl:{u['id']}")] for u in users[:10]]
-    b.append([InlineKeyboardButton(text="◀️", callback_data="mn")])
-    await c.message.edit_text(f"❤️ *Лайки ({len(users)}):*", reply_markup=InlineKeyboardMarkup(inline_keyboard=b), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    b.append([InlineKeyboardButton(text="🔙", callback_data="mn")])
+    await call.message.edit_text(f"❤️ *Лайки ({len(users)}):*", reply_markup=InlineKeyboardMarkup(inline_keyboard=b), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("wl:"))
-async def who_liked_view(c, user):
+async def who_liked_view(call: CallbackQuery, user: Optional[Dict]):
     if not user or not DB.is_vip(user): return
-    p=await DB.get_user_by_id(int(c.data[3:]))
-    if not p: return await c.answer("?")
+    p=await DB.get_user_by_id(int(call.data[3:]))
+    if not p: return await call.answer("?")
     txt=card_text(p, user)
-    # Показать сообщение к суперлайку если есть
     if p.get("like_message"): txt += f"\n\n💌 _{p['like_message']}_"
-    await c.message.edit_text(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="👍 Лайк", callback_data=f"lk:{p['id']}"), InlineKeyboardButton(text="👎", callback_data=f"dl:{p['id']}")],
-        [InlineKeyboardButton(text="◀️", callback_data="likes:list")]
-    ]), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    await call.message.edit_text(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❤️ Лайк", callback_data=f"lk:{p['id']}"), InlineKeyboardButton(text="👎", callback_data=f"dl:{p['id']}")],
+        [InlineKeyboardButton(text="🔙", callback_data="likes:list")]
+    ]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="trial:start")
-async def trial(c, user):
+async def trial(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    if DB.is_vip(user): return await c.answer("✨ Уже VIP!", show_alert=True)
-    if user.get("trial_used"): return await c.answer("🎁 Уже использован!", show_alert=True)
+    if DB.is_vip(user): return await call.answer("👑 Уже VIP!", show_alert=True)
+    if user.get("trial_used"): return await call.answer("❌ Уже использован!", show_alert=True)
     ok=await DB.activate_trial(user["id"])
-    if ok: await c.message.answer("🎉 *VIP Light 3 дня!*\n\n✅ 100 лайков · ✅ ∞ сообщений · ✅ ⭐ суперлайк\n\nЧерез 3 дня — автоотключение.", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
-    else: await c.answer("❌ Уже использован", show_alert=True)
-    await c.answer()
+    if ok:
+        await call.message.answer("🎉 *VIP Light 3 дня!*\n\n❤️ 100 лайков · 💬 ∞ сообщений · ⭐ 1 суперлайк\n\nЧерез 3 дня — автоотключение.", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
+    else:
+        await call.answer("❌ Уже использован", show_alert=True)
+    await call.answer()
 
 @rt.callback_query(F.data=="referral:info")
-async def ref_info(c, user):
+async def ref_info(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
     code=user.get("referral_code","???"); bonus=user.get("referral_bonus_count",0)
-    me = await c.bot.me()
+    me = await call.bot.me()
     link=f"https://t.me/{me.username}?start={code}"
-    await c.message.answer(f"👥 *Пригласи друга!*\n\n`{link}`\n\nТебе: 🚀 буст · Другу: +5 лайков\n\nПриглашено: *{bonus}*",
+    await call.message.answer(f"🤝 *Пригласи друга!*\n\n`{link}`\n\nТебе: 🚀 буст · Другу: +5 лайков\n\nПриглашено: *{bonus}*",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📤 Поделиться", url=f"https://t.me/share/url?url={link}&text=Присоединяйся!")],
-            [InlineKeyboardButton(text="◀️", callback_data="pv")]
-        ]), parse_mode=ParseMode.MARKDOWN); await c.answer()
+            [InlineKeyboardButton(text="🔙", callback_data="pv")]
+        ]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # REWARDS & ACHIEVEMENTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.message(F.text=="🎁 Награды")
-async def show_rewards(m, user):
+async def show_rewards(msg: Message, user: Optional[Dict]):
     if not user: return
     streak = user.get("streak_days", 0)
     day_in_cycle = ((streak - 1) % 7) + 1 if streak > 0 else 1
-
-    txt = f"🎁 *Ежедневные награды*\n\n🔥 Серия: *{streak} дней*\n\n"
+    txt = f"🎁 *Ежедневные награды*\n\n⚡ Серия: *{streak} дней*\n\n"
     for day, reward in Gamification.DAILY_REWARDS.items():
-        marker = "✅" if day < day_in_cycle else ("👉" if day == day_in_cycle else "⬜")
+        marker = "✅" if day < day_in_cycle else ("🎯" if day == day_in_cycle else "⏳")
         txt += f"{marker} День {day}: {reward['text']}\n"
-
     txt += f"\n_Заходи каждый день — получай награды!_"
-
-    await m.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+    await msg.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🏆 Достижения", callback_data="achievements")],
-        [InlineKeyboardButton(text="◀️", callback_data="mn")]
+        [InlineKeyboardButton(text="🔙", callback_data="mn")]
     ]), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="achievements")
-async def show_achievements(c, user):
+async def show_achievements(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
     async with async_session_maker() as s:
         earned = await s.execute(select(Achievement.achievement_type).where(Achievement.user_id == user["id"]))
         earned_set = set(r[0] for r in earned.fetchall())
-
     txt = "🏆 *Достижения*\n\n"
     for ach_type, info in Gamification.ACHIEVEMENTS.items():
-        status = "✅" if ach_type in earned_set else "⬜"
+        status = "✅" if ach_type in earned_set else "🔒"
         txt += f"{status} {info['title']} — _{info['desc']}_\n"
-
     txt += f"\n\nПолучено: *{len(earned_set)}/{len(Gamification.ACHIEVEMENTS)}*"
+    await call.message.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙", callback_data="pv")]
+    ]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
-    await c.message.answer(txt, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="◀️", callback_data="pv")]
-    ]), parse_mode=ParseMode.MARKDOWN); await c.answer()
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # PROFILE & SETTINGS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.message(F.text=="👤 Профиль")
-async def show_profile(m, user):
-    if not user or not user.get("is_profile_complete"): return await m.answer("⚠️ /start")
-    await DB.update_hidden_likes(user["id"]); user=await DB.get_user(m.from_user.id)
+async def show_profile(msg: Message, user: Optional[Dict]):
+    if not user or not user.get("is_profile_complete"): return await msg.answer("❌ /start")
+    await DB.update_hidden_likes(user["id"]); user=await DB.get_user(msg.from_user.id)
     txt=profile_text(user); hidden=user.get("hidden_likes_count",0)
-    if user.get("main_photo"): await m.answer_photo(photo=user["main_photo"], caption=txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
-    else: await m.answer(txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
+    if user.get("main_photo"):
+        await msg.answer_photo(photo=user["main_photo"], caption=txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
+    else:
+        await msg.answer(txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="pv")
-async def back_profile(c, user):
+async def back_profile(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    await DB.update_hidden_likes(user["id"]); user=await DB.get_user(c.from_user.id)
+    await DB.update_hidden_likes(user["id"])
+    user=await DB.get_user(call.from_user.id)
     txt=profile_text(user); hidden=user.get("hidden_likes_count",0)
-    try: await c.message.edit_caption(caption=txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
-    except: await c.message.edit_text(txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
-    await c.answer()
+    try: await call.message.edit_caption(caption=txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
+    except: await call.message.edit_text(txt, reply_markup=KB.profile(DB.is_vip(user),hidden), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="pe")
-async def pe(c):
-    try: await c.message.edit_caption(caption="✏️", reply_markup=KB.edit())
-    except: await c.message.edit_text("✏️", reply_markup=KB.edit())
-    await c.answer()
+async def pe(call: CallbackQuery):
+    try: await call.message.edit_caption(caption="✏️", reply_markup=KB.edit())
+    except: await call.message.edit_text("✏️", reply_markup=KB.edit())
+    await call.answer()
 
 @rt.callback_query(F.data=="settings")
-async def settings(c, user):
+async def settings(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    inv_note = "\n\n👻 _Невидимка: лайкай, не оставляя следов в гостях._" if DB.is_vip(user) else "\n\n👻 _Невидимка — только для VIP_"
-    await c.message.answer(f"⚙️ *Настройки*{inv_note}", reply_markup=KB.settings(user), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    inv_note = "\n\n🥷 _Невидимка: лайкай, не оставляя следов в гостях._" if DB.is_vip(user) else "\n\n🥷 _Невидимка — только для VIP_"
+    await call.message.answer(f"⚙️ *Настройки*{inv_note}", reply_markup=KB.settings(user), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="set:invisible")
-async def toggle_invisible(c, user):
+async def toggle_invisible(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
-    if not DB.is_vip(user): return await c.answer("👻 Невидимка — VIP!", show_alert=True)
+    if not DB.is_vip(user): return await call.answer("👑 Невидимка — VIP!", show_alert=True)
     new_val = await DB.toggle_invisible(user["telegram_id"])
-    await c.answer(f"👻 Невидимка {'включена ✅' if new_val else 'выключена ❌'}", show_alert=True)
-    user = await DB.get_user(c.from_user.id)
-    await c.message.edit_reply_markup(reply_markup=KB.settings(user))
+    await call.answer(f"🥷 Невидимка {'включена ✅' if new_val else 'выключена ❌'}", show_alert=True)
+    user = await DB.get_user(call.from_user.id)
+    await call.message.edit_reply_markup(reply_markup=KB.settings(user))
 
 @rt.callback_query(F.data=="ed:looking")
-async def edit_looking(c, s):
-    await c.message.answer("🔍 Кого ищешь?", reply_markup=KB.looking())
-    # Используем отдельный state trick через data
-    await s.update_data(editing_looking=True)
-    await c.answer()
+async def edit_looking(call: CallbackQuery, state: FSMContext):
+    await call.message.answer("🎯 Кого ищешь?", reply_markup=KB.looking())
+    await state.update_data(editing_looking=True)
+    await call.answer()
 
-# Обработчик looking при редактировании
 @rt.callback_query(F.data.startswith("l:"))
-async def handle_looking_edit(c, s, user):
+async def handle_looking_edit(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    d = await s.get_data()
+    d = await state.get_data()
     if d.get("editing_looking"):
-        lf = c.data[2:]
-        await DB.update_user(c.from_user.id, looking_for=LookingFor(lf))
-        await s.update_data(editing_looking=False)
-        await c.message.edit_text(f"✅ Ищу: {'👨' if lf=='male' else '👩' if lf=='female' else '👫'}")
-        await c.answer()
+        lf = call.data[2:]
+        await DB.update_user(call.from_user.id, looking_for=LookingFor(lf))
+        await state.update_data(editing_looking=False)
+        await call.message.edit_text(f"🎯 Ищу: {'👨' if lf=='male' else '👩' if lf=='female' else '🌈 Всех'}")
+        await call.answer()
 
 @rt.callback_query(F.data=="ed:name")
-async def en(c, s): await c.message.answer("👤:"); await s.set_state(EditStates.edit_name); await c.answer()
+async def en(call: CallbackQuery, state: FSMContext): 
+    await call.message.answer("📝:")
+    await state.set_state(EditStates.edit_name)
+    await call.answer()
+
 @rt.message(EditStates.edit_name)
-async def sn(m, s):
-    if len(m.text.strip())<2: return await m.answer("⚠️")
-    await DB.update_user(m.from_user.id, name=m.text.strip()); await s.clear(); await m.answer("✅", reply_markup=KB.main())
+async def sn(msg: Message, state: FSMContext):
+    if len(msg.text.strip())<2: return await msg.answer("❌")
+    await DB.update_user(msg.from_user.id, name=msg.text.strip())
+    await state.clear()
+    await msg.answer("✅", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:age")
-async def ea(c, s): await c.message.answer("🎂:"); await s.set_state(EditStates.edit_age); await c.answer()
+async def ea(call: CallbackQuery, state: FSMContext): 
+    await call.message.answer("🎂:")
+    await state.set_state(EditStates.edit_age)
+    await call.answer()
+
 @rt.message(EditStates.edit_age)
-async def sa(m, s):
-    try: a=int(m.text.strip()); assert 18<=a<=99
-    except: return await m.answer("⚠️")
-    await DB.update_user(m.from_user.id, age=a); await s.clear(); await m.answer("✅", reply_markup=KB.main())
+async def sa(msg: Message, state: FSMContext):
+    try: a=int(msg.text.strip()); assert 18<=a<=99
+    except: return await msg.answer("❌")
+    await DB.update_user(msg.from_user.id, age=a)
+    await state.clear()
+    await msg.answer("✅", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:city")
-async def ec(c, s): await c.message.answer("🌍:"); await s.set_state(EditStates.edit_city); await c.answer()
+async def ec(call: CallbackQuery, state: FSMContext): 
+    await call.message.answer("🏙:")
+    await state.set_state(EditStates.edit_city)
+    await call.answer()
+
 @rt.message(EditStates.edit_city)
-async def sc(m, s): await DB.update_user(m.from_user.id, city=m.text.strip().title()); await s.clear(); await m.answer("✅", reply_markup=KB.main())
+async def sc(msg: Message, state: FSMContext): 
+    await DB.update_user(msg.from_user.id, city=msg.text.strip().title())
+    await state.clear()
+    await msg.answer("✅", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:bio")
-async def eb(c, s): await c.message.answer("✍️:"); await s.set_state(EditStates.edit_bio); await c.answer()
+async def eb(call: CallbackQuery, state: FSMContext): 
+    await call.message.answer("✍️:")
+    await state.set_state(EditStates.edit_bio)
+    await call.answer()
+
 @rt.message(EditStates.edit_bio)
-async def sb(m, s): await DB.update_user(m.from_user.id, bio=m.text.strip()[:500]); await s.clear(); await m.answer("✅", reply_markup=KB.main())
+async def sb(msg: Message, state: FSMContext): 
+    await DB.update_user(msg.from_user.id, bio=msg.text.strip()[:500])
+    await state.clear()
+    await msg.answer("✅", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:interests")
-async def ei(c, s, user):
+async def ei(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
     cur=set(i.strip() for i in (user.get("interests") or "").split(",") if i.strip())
-    await s.update_data(si=cur); await c.message.answer("🎯", reply_markup=KB.interests(cur)); await s.set_state(EditStates.edit_interests); await c.answer()
+    await state.update_data(si=cur)
+    await call.message.answer("🎨", reply_markup=KB.interests(cur))
+    await state.set_state(EditStates.edit_interests)
+    await call.answer()
 
 @rt.callback_query(EditStates.edit_interests, F.data.startswith("int:"))
-async def si(c, s):
-    v=c.data[4:]
+async def si(call: CallbackQuery, state: FSMContext):
+    v=call.data[4:]
     if v=="done":
-        d=await s.get_data(); await DB.update_user(c.from_user.id, interests=",".join(d.get("si",set()))); await s.clear()
-        await c.message.edit_text("✅"); await c.message.answer("👋", reply_markup=KB.main())
-        # Достижение
-        user=await DB.get_user(c.from_user.id); achs=await Gamification.check_achievements(user)
-        if achs: await c.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
+        d=await state.get_data()
+        await DB.update_user(call.from_user.id, interests=",".join(d.get("si",set())))
+        await state.clear()
+        await call.message.edit_text("✅")
+        await call.message.answer("✅", reply_markup=KB.main())
+        user=await DB.get_user(call.from_user.id)
+        achs=await Gamification.check_achievements(user)
+        if achs: await call.message.answer("🏆 " + ", ".join(a["title"] for a in achs))
     else:
-        d=await s.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
+        d=await state.get_data(); sel=d.get("si",set()); item=Compatibility.INTERESTS_LIST[int(v)]
         sel.discard(item) if item in sel else sel.add(item)
-        await s.update_data(si=sel); await c.message.edit_reply_markup(reply_markup=KB.interests(sel))
-    await c.answer()
+        await state.update_data(si=sel)
+        await call.message.edit_reply_markup(reply_markup=KB.interests(sel))
+        await call.answer()
 
 @rt.callback_query(F.data=="ed:agerange")
-async def ear(c, s, user):
+async def ear(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    await c.message.answer(f"🎯 {user['age_from']}-{user['age_to']}\n`18-30`", parse_mode=ParseMode.MARKDOWN); await s.set_state(EditStates.edit_age_range); await c.answer()
+    await call.message.answer(f"🎯 {user['age_from']}-{user['age_to']}\n`18-30`", parse_mode=ParseMode.MARKDOWN)
+    await state.set_state(EditStates.edit_age_range)
+    await call.answer()
 
 @rt.message(EditStates.edit_age_range)
-async def sar(m, s):
-    try: p=m.text.strip().replace(" ","").split("-"); af,at=int(p[0]),int(p[1]); assert 18<=af<=99 and 18<=at<=99 and af<=at
-    except: return await m.answer("⚠️ `18-30`", parse_mode=ParseMode.MARKDOWN)
-    await DB.update_user(m.from_user.id, age_from=af, age_to=at); await s.clear(); await m.answer(f"✅ {af}-{at}", reply_markup=KB.main())
+async def sar(msg: Message, state: FSMContext):
+    try: 
+        p=msg.text.strip().replace(" ","").split("-")
+        af,at=int(p[0]),int(p[1])
+        assert 18<=af<=99 and 18<=at<=99 and af<=at
+    except: 
+        return await msg.answer("❌ `18-30`", parse_mode=ParseMode.MARKDOWN)
+    await DB.update_user(msg.from_user.id, age_from=af, age_to=at)
+    await state.clear()
+    await msg.answer(f"✅ {af}-{at}", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="ed:photo")
-async def ep(c, s): await c.message.answer("📸:"); await s.set_state(EditStates.add_photo); await c.answer()
+async def ep(call: CallbackQuery, state: FSMContext): 
+    await call.message.answer("📸:")
+    await state.set_state(EditStates.add_photo)
+    await call.answer()
+
 @rt.message(EditStates.add_photo, F.photo)
-async def sp(m, s, user):
+async def sp(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    pid=m.photo[-1].file_id; pl=[p for p in (user.get("photos","") or "").split(",") if p.strip()]
-    if len(pl)>=5: await s.clear(); return await m.answer("⚠️ Макс 5!", reply_markup=KB.main())
-    pl.append(pid); await DB.update_user(m.from_user.id, photos=",".join(pl), main_photo=pid); await s.clear()
-    await m.answer("✅ Фото!", reply_markup=KB.main())
-    # Достижение
-    user=await DB.get_user(m.from_user.id); achs=await Gamification.check_achievements(user)
-    if achs: await m.answer("🏆 " + ", ".join(a["title"] for a in achs))
+    pid=msg.photo[-1].file_id
+    pl=[p for p in (user.get("photos","") or "").split(",") if p.strip()]
+    if len(pl)>=5: 
+        await state.clear()
+        return await msg.answer("❌ Макс 5!", reply_markup=KB.main())
+    pl.append(pid)
+    await DB.update_user(msg.from_user.id, photos=",".join(pl), main_photo=pid)
+    await state.clear()
+    await msg.answer("📸 Фото!", reply_markup=KB.main())
+    user=await DB.get_user(msg.from_user.id)
+    achs=await Gamification.check_achievements(user)
+    if achs: await msg.answer("🏆 " + ", ".join(a["title"] for a in achs))
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # BOOST & SHOP
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.callback_query(F.data=="profile:boost")
-async def pboost(c, user):
+async def pboost(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
     has=user.get("boost_count",0)>0; act=DB.is_boosted(user)
-    st = f"\n🚀 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
-    if has: st+=f"\n📦 {user['boost_count']}"
+    st = f"\n🔥 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
+    if has: st+=f"\n🚀 {user['boost_count']}"
     if not has and not act: st="\n❌ Нет бустов"
-    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Активировать", callback_data="bo:act:profile")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="◀️", callback_data="pv")]]))
-    try: await c.message.edit_caption(caption=f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
-    except: await c.message.edit_text(f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
-    await c.answer()
+    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Активировать", callback_data="bo:act:profile")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="🔙", callback_data="pv")]]))
+    try: await call.message.edit_caption(caption=f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    except: await call.message.edit_text(f"🚀 *БУСТ*\nТоп 24ч{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("bo:act"))
-async def act_boost(c, user):
-    if not user or user.get("boost_count",0)<=0: return await c.answer("❌!", show_alert=True)
+async def act_boost(call: CallbackQuery, user: Optional[Dict]):
+    if not user or user.get("boost_count",0)<=0: return await call.answer("❌ !", show_alert=True)
     ok=await DB.use_boost(user["id"])
     if ok:
-        u=await DB.get_user(c.from_user.id); back="pv" if ":profile" in c.data else "sh:mn"
-        try: await c.message.edit_caption(caption=f"🚀 *Активирован!*\nДо {u['boost_expires_at'].strftime('%d.%m %H:%M')} · 📦{u['boost_count']}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️", callback_data=back)]]), parse_mode=ParseMode.MARKDOWN)
-        except: await c.message.edit_text(f"🚀!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️", callback_data=back)]]))
-    await c.answer()
+        u=await DB.get_user(call.from_user.id)
+        back="pv" if ":profile" in call.data else "sh:mn"
+        try: await call.message.edit_caption(caption=f"🚀 *Активирован!*\nДо {u['boost_expires_at'].strftime('%d.%m %H:%M')} · {u['boost_count']}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]), parse_mode=ParseMode.MARKDOWN)
+        except: await call.message.edit_text(f"✅!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙", callback_data=back)]]))
+    await call.answer()
 
-@rt.message(F.text=="🛍️ Магазин")
-async def shop(m):
-    await m.answer(f"🛍️ *{BOT_NAME}* — Магазин", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
+@rt.message(F.text=="💎 Магазин")
+async def shop(msg: Message):
+    await msg.answer(f"💎 *{BOT_NAME}* — Магазин", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="sh:mn")
-async def shmn(c): await c.message.edit_text(f"🛍️ *Магазин*", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN); await c.answer()
+async def shmn(call: CallbackQuery): 
+    await call.message.edit_text(f"💎 *Магазин*", reply_markup=KB.shop(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="sh:compare")
-async def shcmp(c):
-    txt = f"📊 *ТАРИФЫ*\n\n🍷 Free: 15❤️ 5💬\n🥂 Light 149₽: 100❤️ ∞💬 1⭐\n🍾 Std 349₽: ∞❤️ ∞💬 2⭐ 👻 🔄\n👑 Pro 599₽: 5⭐ 3🚀 👑\n💎 Forever 2999₽: навсегда!"
-    await c.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN); await c.answer()
+async def shcmp(call: CallbackQuery):
+    txt = f"⚖️ *ТАРИФЫ*\n\n🆓 Free: 15❤️ 5💬\n⭐ Light 149₽: 100❤️ ∞💬 1⭐\n🌟 Std 349₽: ∞❤️ ∞💬 2⭐ 👁\n👑 Pro 599₽: 5⭐ 3🚀 👁\n💎 Forever 2999₽: навсегда!"
+    await call.message.edit_text(txt, reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="sh:subs")
-async def shsubs(c): await c.message.edit_text("🥂 *Тарифы:*", reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN); await c.answer()
+async def shsubs(call: CallbackQuery): 
+    await call.message.edit_text("👑 *Тарифы:*", reply_markup=KB.subs(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("tf:"))
-async def tf(c):
-    tier = c.data[3:]
+async def tf(call: CallbackQuery):
+    tier = call.data[3:]
     descs = {
-        "vip_light": "🥂 *LIGHT*\n100❤️ · ∞💬 · 1⭐ · 10👀 · Приоритет",
-        "vip_standard": "🍾 *STANDARD* 🔥\n∞❤️💬 · 2⭐ · Все👀 · ❤️Кто лайкнул · 👻 · 🚀 · 🔄",
-        "vip_pro": "👑 *PRO* 💫\nВсё + 5⭐ · 3🚀 · 👑 · Топ · 24/7",
+        "vip_light": "⭐ *LIGHT*\n100❤️ ·∞💬 ·1⭐ ·10👁 ·Приоритет",
+        "vip_standard": "🌟 *STANDARD* \n∞❤️ ·2⭐ ·Все👁 ·Кто лайкнул · 🚫 · 🚀",
+        "vip_pro": "👑 *PRO* \nВсё + 5⭐ ·3🚀 · 👁 ·Топ · 24/7",
         "vip_lifetime": "💎 *FOREVER*\nВсё из Pro НАВСЕГДА! 2999₽",
     }
-    await c.message.edit_text(descs.get(tier, ""), reply_markup=KB.buy(tier), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    await call.message.edit_text(descs.get(tier, ""), reply_markup=KB.buy(tier), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="sh:boost")
-async def shboost(c, user):
+async def shboost(call: CallbackQuery, user: Optional[Dict]):
     if not user: return
     has=user.get("boost_count",0)>0; act=DB.is_boosted(user)
-    st = f"\n🚀 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
-    if has: st+=f"\n📦 {user['boost_count']}"
+    st = f"\n🔥 До {user['boost_expires_at'].strftime('%d.%m %H:%M')}" if act else ""
+    if has: st+=f"\n🚀 {user['boost_count']}"
     if not has and not act: st="\n❌ Нет"
-    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Актив", callback_data="bo:act")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="10×249₽", callback_data="by:boost:10:24900")],[InlineKeyboardButton(text="◀️", callback_data="sh:mn")]]))
-    await c.message.edit_text(f"🚀 *БУСТ* +500%{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN); await c.answer()
+    bk=InlineKeyboardMarkup(inline_keyboard=(([[InlineKeyboardButton(text="🚀 Актив", callback_data="bo:act")]] if has else []) + [[InlineKeyboardButton(text="1×39₽", callback_data="by:boost:1:3900"), InlineKeyboardButton(text="5×149₽", callback_data="by:boost:5:14900")],[InlineKeyboardButton(text="10×249₽", callback_data="by:boost:10:24900")],[InlineKeyboardButton(text="🔙", callback_data="sh:mn")]]))
+    await call.message.edit_text(f"🚀 *БУСТ* +500%{st}", reply_markup=bk, parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("by:"))
-async def handle_buy(c, user):
-    if not user: return await c.answer("❌")
-    parts=c.data.split(":"); prod,param,amt=parts[1],int(parts[2]),int(parts[3])
+async def handle_buy(call: CallbackQuery, user: Optional[Dict]):
+    if not user: return await call.answer("❌")
+    parts=call.data.split(":")
+    prod,param,amt=parts[1],int(parts[2]),int(parts[3])
     res = await Pay.create(user, "boost", count=param, amount=amt) if prod=="boost" else await Pay.create(user, "subscription", tier=prod, dur=param, amount=amt)
-    if "error" in res: return await c.answer(f"❌ {res['error']}", show_alert=True)
-    await c.message.edit_text(f"💳 *{amt//100}₽*\n1️⃣ Оплати → 2️⃣ Проверь", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="💳 Оплатить", url=res["url"])],[InlineKeyboardButton(text="✅ Проверить", callback_data=f"ck:{res['pid']}")],[InlineKeyboardButton(text="❌", callback_data="sh:mn")]]), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    if "error" in res: return await call.answer(f"❌ {res['error']}", show_alert=True)
+    await call.message.edit_text(f"💳 *{amt//100}₽*\n1️⃣ Оплати  2️⃣ Проверь", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="💳 Оплатить", url=res["url"])],[InlineKeyboardButton(text="🔄 Проверить", callback_data=f"ck:{res['pid']}")],[InlineKeyboardButton(text="🔙", callback_data="sh:mn")]]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("ck:"))
-async def check_pay(c):
-    res=await Pay.check(int(c.data[3:]))
+async def check_pay(call: CallbackQuery):
+    res=await Pay.check(int(call.data[3:]))
     if res["status"]=="succeeded":
-        t="✅ *Подписка!* 🍷" if res.get("type")!="boost" else f"✅ *{res.get('count',1)} бустов!*"
-        await c.message.edit_text(t, parse_mode=ParseMode.MARKDOWN); await c.message.answer("👋", reply_markup=KB.main())
-    elif res["status"]=="pending": await c.answer("⏳...", show_alert=True)
-    else: await c.answer("❌", show_alert=True)
-    await c.answer()
+        t="🎉 *Подписка!* " if res.get("type")!="boost" else f"🚀 *{res.get('count',1)} бустов!*"
+        await call.message.edit_text(t, parse_mode=ParseMode.MARKDOWN)
+        await call.message.answer("🎉", reply_markup=KB.main())
+    elif res["status"]=="pending": 
+        await call.answer("⏳ ...", show_alert=True)
+    else: 
+        await call.answer("❌", show_alert=True)
+    await call.answer()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # PROMO & FAQ
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 @rt.callback_query(F.data=="sh:promo")
-async def sh_promo(c, s): await c.message.edit_text("🎁 *Промокод:*", parse_mode=ParseMode.MARKDOWN); await s.update_data(pum=True); await s.set_state(AdminStates.promo_code); await c.answer()
+async def sh_promo(call: CallbackQuery, state: FSMContext): 
+    await call.message.edit_text("🎟 *Промокод:*", parse_mode=ParseMode.MARKDOWN)
+    await state.update_data(pum=True)
+    await state.set_state(AdminStates.promo_code)
+    await call.answer()
 
 @rt.message(AdminStates.promo_code)
-async def promo_input(m, s, user):
-    d=await s.get_data()
+async def promo_input(msg: Message, state: FSMContext, user: Optional[Dict]):
+    d=await state.get_data()
     if d.get("pum"):
-        code=m.text.strip().upper(); await s.clear()
+        code=msg.text.strip().upper()
+        await state.clear()
         if not user: return
         res=await DB.use_promo(user["id"],code)
-        if "error" in res: await m.answer(f"❌ {res['error']}", reply_markup=KB.main())
-        else: await m.answer(f"✅ *{TIER_NAMES.get(res['tier'],'VIP')}* {res['days']}дн! 🍷", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
+        if "error" in res: 
+            await msg.answer(f"❌ {res['error']}", reply_markup=KB.main())
+        else: 
+            await msg.answer(f"🎉 *{TIER_NAMES.get(res['tier'],'VIP')}* {res['days']}дн! ", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
         return
+        
     if not user or not DB.is_admin(user): return
-    await s.update_data(pc_code=m.text.strip().upper()); await m.answer("Тариф:", reply_markup=KB.give_vip_tiers()); await s.set_state(AdminStates.promo_tier)
+    await state.update_data(pc_code=msg.text.strip().upper())
+    await msg.answer("Тариф:", reply_markup=KB.give_vip_tiers())
+    await state.set_state(AdminStates.promo_tier)
 
 @rt.callback_query(AdminStates.promo_tier, F.data.startswith("gv:"))
-async def pt(c, s, user):
+async def pt(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
-    await s.update_data(pc_tier=c.data[3:]); await c.message.edit_text("Дней?"); await s.set_state(AdminStates.promo_duration); await c.answer()
+    await state.update_data(pc_tier=call.data[3:])
+    await call.message.edit_text("Дней?")
+    await state.set_state(AdminStates.promo_duration)
+    await call.answer()
 
 @rt.message(AdminStates.promo_duration)
-async def pd(m, s, user):
+async def pd(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
-    try: days=int(m.text.strip())
-    except: return await m.answer("⚠️")
-    await s.update_data(pc_days=days); await m.answer("Лимит?"); await s.set_state(AdminStates.promo_uses)
+    try: days=int(msg.text.strip())
+    except: return await msg.answer("❌")
+    await state.update_data(pc_days=days)
+    await msg.answer("Лимит?")
+    await state.set_state(AdminStates.promo_uses)
 
 @rt.message(AdminStates.promo_uses)
-async def pu(m, s, user):
+async def pu(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not user or not DB.is_admin(user): return
-    try: uses=int(m.text.strip())
-    except: return await m.answer("⚠️")
-    d=await s.get_data(); await DB.create_promo(d["pc_code"],d["pc_tier"],d["pc_days"],uses); await s.clear()
-    await m.answer(f"✅ `{d['pc_code']}` {d['pc_days']}дн ×{uses}", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
+    try: uses=int(msg.text.strip())
+    except: return await msg.answer("❌")
+    d=await state.get_data()
+    await DB.create_promo(d["pc_code"],d["pc_tier"],d["pc_days"],uses)
+    await state.clear()
+    await msg.answer(f"✅ `{d['pc_code']}` {d['pc_days']}дн ×{uses}", reply_markup=KB.main(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.message(F.text=="❓ FAQ")
-async def faq(m):
-    await m.answer(f"❓ *FAQ · {BOT_NAME}*\n\n"
-        "❤️ Ставь 👍/⭐ — взаимно → чат!\n"
-        "⭐ Суперлайк = ×3 шанс мэтча\n"
-        "🎯 Совместимость по интересам\n"
-        "🚀 Буст = топ 24ч\n"
-        "🔄 Сброс = VIP\n"
-        "🎁 Пробный = 3 дня VIP!\n"
-        "🔥 Серия = награды каждый день!\n"
-        "🏆 Достижения = бонусы!\n"
-        "💡 Айсбрейкер = не знаешь что написать", parse_mode=ParseMode.MARKDOWN)
+async def faq(msg: Message):
+    await msg.answer(f"❓ *FAQ · {BOT_NAME}*\n\n"
+                     "❤️ Ставь ❤️ / 👎 — взаимно 👉 чат!\n"
+                     "⭐ Суперлайк = ×3 шанс мэтча\n"
+                     "💖 Совместимость по интересам\n"
+                     "🚀 Буст = топ 24ч\n"
+                     "🔄 Сброс = VIP\n"
+                     "🎁 Пробный = 3 дня VIP!\n"
+                     "⚡ Серия = награды каждый день!\n"
+                     "🏆 Достижения = бонусы!\n"
+                     "🧊 Айсбрейкер = не знаешь что написать", parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data.startswith("rp:"))
-async def start_report(c, s):
-    await s.update_data(rp_id=int(c.data[3:]))
-    try: await c.message.edit_caption(caption="🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
-    except: await c.message.edit_text("🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
-    await c.answer()
+async def start_report(call: CallbackQuery, state: FSMContext):
+    await state.update_data(rp_id=int(call.data[3:]))
+    try: await call.message.edit_caption(caption="🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
+    except: await call.message.edit_text("🚩 *Причина:*", reply_markup=KB.report_reasons(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("rr:"))
-async def save_report(c, s, user):
+async def save_report(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not user: return
-    d=await s.get_data(); rid=d.get("rp_id")
-    if rid: await DB.create_report(user["id"], rid, c.data[3:])
-    await s.clear()
-    try: await c.message.edit_caption(caption="✅ Отправлено!")
-    except: await c.message.edit_text("✅ Отправлено!")
-    await next_card(c, s, user); await c.answer()
+    d=await state.get_data()
+    rid=d.get("rp_id")
+    if rid: await DB.create_report(user["id"], rid, call.data[3:])
+    await state.clear()
+    try: await call.message.edit_caption(caption="✅ Отправлено!")
+    except: await call.message.edit_text("✅ Отправлено!")
+    await next_card(call, state, user)
+    await call.answer()
 
 @rt.callback_query(F.data=="mn")
-async def back_menu(c, s):
-    await s.clear()
-    try: await c.message.delete()
+async def back_menu(call: CallbackQuery, state: FSMContext):
+    await state.clear()
+    try: await call.message.delete()
     except: pass
-    await c.message.answer("👋", reply_markup=KB.main()); await c.answer()
+    await call.message.answer("🔙", reply_markup=KB.main())
+    await call.answer()
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # ADMIN
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 def is_adm(u): return u and u.get("telegram_id") in config.ADMIN_IDS
 
 @rt.message(Command("admin"))
-async def admin_cmd(m, user):
+async def admin_cmd(msg: Message, user: Optional[Dict]):
     if not is_adm(user): return
-    await m.answer(f"🛡️ *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
+    await msg.answer(f"👑 *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data=="adm:main")
-async def adm_main(c, s, user):
-    if not is_adm(user): return; await s.clear()
-    await c.message.edit_text("🛡️ *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN); await c.answer()
+async def adm_main(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
+    if not is_adm(user): return
+    await state.clear()
+    await call.message.edit_text("👑 *Админка*", reply_markup=KB.admin(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="adm:stats")
-async def adm_stats(c, user):
+async def adm_stats(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
     st=await DB.get_stats()
     txt = (f"📊 *Статистика*\n\n👥 {st['total']}/{st['complete']} · DAU:{st['dau']} WAU:{st['wau']} MAU:{st['mau']}\n"
            f"VIP:{st['vip']}({st['conversion']:.1f}%) Trial:{st['trials']} Бан:{st['banned']} +{st['today_reg']}\n"
-           f"❤️{st['likes']} 💘{st['matches']} 💬{st['messages']}\n"
-           f"💰 {st['revenue']:.0f}₽ мес:{st['month_revenue']:.0f}₽ 🚩{st['pending_reports']}")
-    await c.message.edit_text(txt, reply_markup=KB.back_admin(), parse_mode=ParseMode.MARKDOWN); await c.answer()
+           f"❤️{st['likes']} 💕{st['matches']} 💬{st['messages']}\n"
+           f"💳 {st['revenue']:.0f}₽ мес:{st['month_revenue']:.0f}₽ 🚩{st['pending_reports']}")
+    await call.message.edit_text(txt, reply_markup=KB.back_admin(), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data=="adm:search")
-async def adm_search(c, s, user):
+async def adm_search(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await c.message.edit_text("🔍:"); await s.set_state(AdminStates.search_user); await c.answer()
+    await call.message.edit_text("🔍:")
+    await state.set_state(AdminStates.search_user)
+    await call.answer()
 
 @rt.message(AdminStates.search_user)
-async def adm_search_result(m, s, user):
+async def adm_search_result(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    results=await DB.search_users(m.text.strip()); await s.clear()
-    if not results: return await m.answer("😔", reply_markup=KB.back_admin())
+    results=await DB.search_users(msg.text.strip())
+    await state.clear()
+    if not results: return await msg.answer("❌", reply_markup=KB.back_admin())
     u=results[0]
-    await m.answer(f"ID:`{u['id']}` @{u.get('username') or '-'}\n{DB.get_badge(u)}*{u['name']}*,{u['age']} {u['city']}\n{TIER_NAMES.get(u['subscription_tier'],'')} 👁️{u['views_count']} ❤️{u['likes_received_count']} 💘{u['matches_count']}",
-        reply_markup=KB.admin_user(u["id"], u["is_banned"]), parse_mode=ParseMode.MARKDOWN)
+    await msg.answer(f"ID:`{u['id']}` @{u.get('username') or '-'}\n{DB.get_badge(u)}*{u['name']}*,{u['age']} {u['city']}\n{TIER_NAMES.get(u['subscription_tier'],'')} 👀{u['views_count']} ❤️{u['likes_received_count']}💕{u['matches_count']}", reply_markup=KB.admin_user(u["id"], u["is_banned"]), parse_mode=ParseMode.MARKDOWN)
 
 @rt.callback_query(F.data.startswith("au:ban:"))
-async def adm_ban(c, user):
+async def adm_ban(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
-    u=await DB.get_user_by_id(int(c.data.split(":")[2]))
-    if u: await DB.update_user(u["telegram_id"], is_banned=True); await c.message.edit_text("🚫!", reply_markup=KB.back_admin())
-    await c.answer()
+    u=await DB.get_user_by_id(int(call.data.split(":")[2]))
+    if u: 
+        await DB.update_user(u["telegram_id"], is_banned=True)
+        await call.message.edit_text("🚫!", reply_markup=KB.back_admin())
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("au:unban:"))
-async def adm_unban(c, user):
+async def adm_unban(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
-    u=await DB.get_user_by_id(int(c.data.split(":")[2]))
-    if u: await DB.update_user(u["telegram_id"], is_banned=False); await c.message.edit_text("✅!", reply_markup=KB.back_admin())
-    await c.answer()
+    u=await DB.get_user_by_id(int(call.data.split(":")[2]))
+    if u: 
+        await DB.update_user(u["telegram_id"], is_banned=False)
+        await call.message.edit_text("✅!", reply_markup=KB.back_admin())
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("au:verify:"))
-async def adm_verify(c, user):
+async def adm_verify(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
-    u=await DB.get_user_by_id(int(c.data.split(":")[2]))
-    if u: await DB.update_user(u["telegram_id"], is_verified=True); await c.message.edit_text("✅!", reply_markup=KB.back_admin())
-    await c.answer()
+    u=await DB.get_user_by_id(int(call.data.split(":")[2]))
+    if u: 
+        await DB.update_user(u["telegram_id"], is_verified=True)
+        await call.message.edit_text("✅!", reply_markup=KB.back_admin())
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("au:givevip:"))
-async def adm_givevip(c, s, user):
+async def adm_givevip(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await s.update_data(target_uid=int(c.data.split(":")[2]))
-    await c.message.edit_text("Тариф:", reply_markup=KB.give_vip_tiers()); await c.answer()
+    await state.update_data(target_uid=int(call.data.split(":")[2]))
+    await call.message.edit_text("Тариф:", reply_markup=KB.give_vip_tiers())
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("gv:"))
-async def adm_gv(c, s, user):
+async def adm_gv(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    tier=c.data[3:]
+    tier=call.data[3:]
     if tier=="vip_lifetime":
-        d=await s.get_data()
+        d=await state.get_data()
         if d.get("target_uid"): await DB.activate_subscription_by_id(d["target_uid"], tier, 0)
-        await s.clear(); await c.message.edit_text("✅💎", reply_markup=KB.back_admin())
+        await state.clear()
+        await call.message.edit_text("✅", reply_markup=KB.back_admin())
     else:
-        await s.update_data(give_tier=tier); await c.message.edit_text("Дней?"); await s.set_state(AdminStates.give_vip_duration)
-    await c.answer()
+        await state.update_data(give_tier=tier)
+        await call.message.edit_text("Дней?")
+        await state.set_state(AdminStates.give_vip_duration)
+    await call.answer()
 
 @rt.message(AdminStates.give_vip_duration)
-async def adm_gvd(m, s, user):
+async def adm_gvd(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    try: days=int(m.text.strip())
-    except: return await m.answer("⚠️")
-    d=await s.get_data(); await DB.activate_subscription_by_id(d["target_uid"],d["give_tier"],days); await s.clear()
-    await m.answer(f"✅ {days}дн!", reply_markup=KB.main())
+    try: days=int(msg.text.strip())
+    except: return await msg.answer("❌")
+    d=await state.get_data()
+    await DB.activate_subscription_by_id(d["target_uid"],d["give_tier"],days)
+    await state.clear()
+    await msg.answer(f"✅ {days}дн!", reply_markup=KB.main())
 
 @rt.callback_query(F.data.startswith("au:giveboost:"))
-async def adm_gb(c, s, user):
+async def adm_gb(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await s.update_data(target_uid=int(c.data.split(":")[2])); await c.message.edit_text("Сколько?"); await s.set_state(AdminStates.give_boost_count); await c.answer()
+    await state.update_data(target_uid=int(call.data.split(":")[2]))
+    await call.message.edit_text("Сколько?")
+    await state.set_state(AdminStates.give_boost_count)
+    await call.answer()
 
 @rt.message(AdminStates.give_boost_count)
-async def adm_gbc(m, s, user):
+async def adm_gbc(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    try: c=int(m.text.strip())
-    except: return await m.answer("⚠️")
-    d=await s.get_data(); await DB.add_boosts(d["target_uid"],c); await s.clear(); await m.answer(f"✅ {c}!", reply_markup=KB.main())
+    try: c=int(msg.text.strip())
+    except: return await msg.answer("❌")
+    d=await state.get_data()
+    await DB.add_boosts(d["target_uid"],c)
+    await state.clear()
+    await msg.answer(f"✅ {c}!", reply_markup=KB.main())
 
 @rt.callback_query(F.data=="adm:reports")
-async def adm_reports(c, user):
+async def adm_reports(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
     reps=await DB.get_pending_reports(5)
-    if not reps: await c.message.edit_text("✅ Нет!", reply_markup=KB.back_admin()); await c.answer(); return
-    rep=reps[0]; rdn=rep["reported"]["name"] if rep["reported"] else "?"; rid=rep["reported"]["id"] if rep["reported"] else 0
-    await c.message.edit_text(f"🚩 #{rep['id']}\n{rdn}(ID:{rid})\n{rep['reason']}\nВсего:{len(reps)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🚫 Бан", callback_data=f"ar:ban:{rep['id']}:{rid}"), InlineKeyboardButton(text="❌ Откл", callback_data=f"ar:dismiss:{rep['id']}:{rid}")],
-        [InlineKeyboardButton(text="➡️", callback_data="adm:reports")]
-    ]), parse_mode=ParseMode.MARKDOWN); await c.answer()
+    if not reps: 
+        await call.message.edit_text("✅ Нет!", reply_markup=KB.back_admin())
+        return await call.answer()
+        
+    rep=reps[0]
+    rdn=rep["reported"]["name"] if rep["reported"] else "?"
+    rid=rep["reported"]["id"] if rep["reported"] else 0
+    await call.message.edit_text(f"🚩 #{rep['id']}\n{rdn}(ID:{rid})\n{rep['reason']}\nВсего:{len(reps)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚫 Бан", callback_data=f"ar:ban:{rep['id']}:{rid}"), InlineKeyboardButton(text="✅ Откл", callback_data=f"ar:dismiss:{rep['id']}:{rid}")],
+        [InlineKeyboardButton(text="⏭", callback_data="adm:reports")]
+    ]), parse_mode=ParseMode.MARKDOWN)
+    await call.answer()
 
 @rt.callback_query(F.data.startswith("ar:"))
-async def adm_report_action(c, user):
+async def adm_report_action(call: CallbackQuery, user: Optional[Dict]):
     if not is_adm(user): return
-    parts=c.data.split(":"); action,rid,ruid=parts[1],int(parts[2]),int(parts[3])
+    parts=call.data.split(":")
+    action,rid,ruid=parts[1],int(parts[2]),int(parts[3])
     if action=="ban":
         u=await DB.get_user_by_id(ruid)
         if u: await DB.update_user(u["telegram_id"], is_banned=True)
-        await DB.resolve_report(rid,"banned"); await c.message.edit_text("🚫", reply_markup=KB.back_admin())
+        await DB.resolve_report(rid,"banned")
+        await call.message.edit_text("🚫", reply_markup=KB.back_admin())
     elif action=="dismiss":
-        await DB.resolve_report(rid,"dismissed"); await c.message.edit_text("❌", reply_markup=KB.back_admin())
-    await c.answer()
+        await DB.resolve_report(rid,"dismissed")
+        await call.message.edit_text("✅", reply_markup=KB.back_admin())
+    await call.answer()
 
 @rt.callback_query(F.data=="adm:broadcast")
-async def adm_bc(c, s, user):
+async def adm_bc(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await c.message.edit_text("📢 *Текст:*", parse_mode=ParseMode.MARKDOWN); await s.set_state(AdminStates.broadcast_text); await c.answer()
+    await call.message.edit_text("📢 *Текст:*", parse_mode=ParseMode.MARKDOWN)
+    await state.set_state(AdminStates.broadcast_text)
+    await call.answer()
 
 @rt.message(AdminStates.broadcast_text)
-async def adm_bct(m, s, user):
+async def adm_bct(msg: Message, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await s.update_data(bc_text=m.text); await m.answer("Кому?", reply_markup=KB.broadcast_targets()); await s.set_state(AdminStates.broadcast_confirm)
+    await state.update_data(bc_text=msg.text)
+    await msg.answer("Кому?", reply_markup=KB.broadcast_targets())
+    await state.set_state(AdminStates.broadcast_confirm)
 
 @rt.callback_query(AdminStates.broadcast_confirm, F.data.startswith("bc:"))
-async def adm_bcs(c, s, user):
+async def adm_bcs(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    target=c.data[3:]
+    target=call.data[3:]
     if target=="send":
-        d=await s.get_data(); txt=d["bc_text"]; tgt=d.get("bc_target","all")
-        ids=await DB.get_all_user_ids(tgt); await s.clear()
-        await c.message.edit_text(f"📢 {len(ids)}...")
+        d=await state.get_data()
+        txt=d["bc_text"]
+        tgt=d.get("bc_target","all")
+        ids=await DB.get_all_user_ids(tgt)
+        await state.clear()
+        await call.message.edit_text(f"🚀 {len(ids)}...")
         sent=failed=0
         for tid in ids:
-            try: await c.bot.send_message(tid, txt, parse_mode=ParseMode.MARKDOWN); sent+=1
-            except: failed+=1
+            try: 
+                await call.bot.send_message(tid, txt, parse_mode=ParseMode.MARKDOWN)
+                sent+=1
+            except: 
+                failed+=1
             if sent%25==0: await asyncio.sleep(1)
         await DB.log_broadcast(user["telegram_id"], txt, tgt, sent, failed)
-        await c.message.answer(f"✅ {sent} ❌ {failed}", reply_markup=KB.back_admin())
+        await call.message.answer(f"✅ {sent} ❌ {failed}", reply_markup=KB.back_admin())
     else:
-        await s.update_data(bc_target=target); d=await s.get_data()
+        await state.update_data(bc_target=target)
+        d=await state.get_data()
         ids=await DB.get_all_user_ids(target)
-        await c.message.edit_text(f"📢 {d['bc_text'][:100]}...\n\n{target} · {len(ids)}", reply_markup=KB.broadcast_confirm())
-    await c.answer()
+        await call.message.edit_text(f"📢 {d['bc_text'][:100]}...\n\n{target} · {len(ids)}", reply_markup=KB.broadcast_confirm())
+    await call.answer()
 
 @rt.callback_query(F.data=="adm:promo")
-async def adm_promo(c, s, user):
+async def adm_promo(call: CallbackQuery, state: FSMContext, user: Optional[Dict]):
     if not is_adm(user): return
-    await c.message.edit_text("🎁 Код:"); await s.update_data(pum=False); await s.set_state(AdminStates.promo_code); await c.answer()
+    await call.message.edit_text("🎟 Код:")
+    await state.update_data(pum=False)
+    await state.set_state(AdminStates.promo_code)
+    await call.answer()
 
-# ═════════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # BACKGROUND TASKS
-# ═════════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 async def hidden_likes_reminders(bot: Bot):
     while True:
         await asyncio.sleep(14400)
         try:
             async with async_session_maker() as s:
-                users = await s.execute(select(User).where(and_(User.is_active == True, User.is_banned == False, User.is_profile_complete == True, User.subscription_tier == SubscriptionTier.FREE, User.hidden_likes_count > 0, User.last_active_at > datetime.utcnow() - timedelta(days=3))).limit(50))
+                users = await s.execute(select(User).where(and_(User.is_active == True, User.is_banned == False,
+                                                                User.is_profile_complete == True, User.subscription_tier == SubscriptionTier.FREE,
+                                                                User.hidden_likes_count > 0, User.last_active_at > datetime.utcnow() -
+                                                                timedelta(days=3))).limit(50))
                 for u in users.scalars().all():
                     try:
                         t, k = Monetization.get_hidden_likes_msg(u.hidden_likes_count)
@@ -2205,13 +2426,15 @@ async def evening_boost_suggestions(bot: Bot):
         await asyncio.sleep((target - now).total_seconds())
         try:
             async with async_session_maker() as s:
-                users = await s.execute(select(User).where(and_(User.is_active == True, User.is_banned == False, User.is_profile_complete == True, User.last_active_at > datetime.utcnow() - timedelta(days=2))).limit(100))
+                users = await s.execute(select(User).where(and_(User.is_active == True, User.is_banned == False,
+                                                                User.is_profile_complete == True, User.last_active_at > datetime.utcnow() -
+                                                                timedelta(days=2))).limit(100))
                 for u in users.scalars().all():
                     if not u.boost_expires_at or u.boost_expires_at < datetime.utcnow():
                         try:
                             await bot.send_message(u.telegram_id, "🚀 *Вечер — лучшее время для буста!*\n+500% просмотров за 39₽",
-                                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Буст 39₽", callback_data="by:boost:1:3900")]]),
-                                parse_mode=ParseMode.MARKDOWN)
+                                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Буст 39₽", callback_data="by:boost:1:3900")]]),
+                                                   parse_mode=ParseMode.MARKDOWN)
                         except: pass
                         await asyncio.sleep(0.5)
         except Exception as e: logger.error(f"Boost suggest err: {e}")
@@ -2236,16 +2459,15 @@ async def streak_reminders(bot: Bot):
                         day = ((u.streak_days) % 7) + 1
                         reward = Gamification.DAILY_REWARDS.get(day, {})
                         await bot.send_message(u.telegram_id,
-                            f"🔥 *Не потеряй серию {u.streak_days} дней!*\n\nЗайди сегодня и получи: {reward.get('text', '🎁')}\n\n_Серия обнулится если пропустишь день!_",
-                            parse_mode=ParseMode.MARKDOWN)
+                                               f"⚡ *Не потеряй серию {u.streak_days} дней!*\n\nЗайди сегодня и получи: {reward.get('text', '')}\n\n_Серия обнулится если пропустишь день!_",
+                                               parse_mode=ParseMode.MARKDOWN)
                     except: pass
                     await asyncio.sleep(0.5)
         except Exception as e: logger.error(f"Streak remind err: {e}")
 
-# ═════════════════════════════════════════════════════════════════════════════════
+# ==========================================
 # MAIN
-# ═════════════════════════════════════════════════════════════════════════════════
-
+# ==========================================
 async def main():
     await init_db()
     bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
